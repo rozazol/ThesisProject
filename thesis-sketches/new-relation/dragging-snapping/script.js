@@ -1,8 +1,10 @@
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
+import { setupCanvas } from "../../shared/canvas-setup.js";
+import { setupPointer } from "../../shared/pointer-input.js";
+import { physicsStep } from "../../shared/physics.js";
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById(`canvas`));
-const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext(`2d`));
 const debug = /** @type {HTMLElement} */ (document.getElementById(`debug`));
 
 const settings = {
@@ -34,9 +36,6 @@ settings.icons = settings.iconDefs.map((def) => ({
 }));
 
 const state = {
-  dpr: window.devicePixelRatio || 1,
-  cssW: 0,
-  cssH: 0,
   dragging: false,
   activeIdx: -1,
   dragOffsetX: 0,
@@ -47,20 +46,7 @@ const state = {
   initialized: false,
 };
 
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-  canvas.width = Math.floor(cssW * state.dpr);
-  canvas.height = Math.floor(cssH * state.dpr);
-  canvas.style.width = `${cssW}px`;
-  canvas.style.height = `${cssH}px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
+const { ctx, size } = setupCanvas(canvas, (_cssW, _cssH) => {
   if (!state.initialized) {
     const g = settings.gridSize;
     settings.icons.forEach((icon, i) => {
@@ -71,10 +57,7 @@ function resizeCanvas() {
     });
     state.initialized = true;
   }
-}
-window.addEventListener(`resize`, resizeCanvas);
-resizeCanvas();
-
+});
 
 function hitIcon(px, py) {
   const s = settings.iconSize;
@@ -92,8 +75,8 @@ function snapPosition(x, y) {
   const g = settings.gridSize;
   const s = settings.iconSize;
   return {
-    x: Numbers.clamp(Math.round(x / g) * g, 0, state.cssW - s),
-    y: Numbers.clamp(Math.round(y / g) * g, settings.menubarHeight, state.cssH - s - 20),
+    x: Numbers.clamp(Math.round(x / g) * g, 0, size.cssW - s),
+    y: Numbers.clamp(Math.round(y / g) * g, settings.menubarHeight, size.cssH - s - 20),
   };
 }
 
@@ -106,74 +89,55 @@ function snapWithPressure(rawX, rawY, pressure) {
   };
 }
 
-canvas.addEventListener(`pointerdown`, (e) => {
-  const x = e.offsetX;
-  const y = e.offsetY;
-  const idx = hitIcon(x, y);
-  if (idx !== -1) {
-    state.dragging = true;
-    state.activeIdx = idx;
-    state.dragOffsetX = x - settings.icons[idx].virtX;
-    state.dragOffsetY = y - settings.icons[idx].virtY;
-    canvas.setPointerCapture(e.pointerId);
-  }
+setupPointer(canvas, {
+  onDown(ptr) {
+    const idx = hitIcon(ptr.x, ptr.y);
+    if (idx !== -1) {
+      state.dragging = true;
+      state.activeIdx = idx;
+      state.dragOffsetX = ptr.x - settings.icons[idx].virtX;
+      state.dragOffsetY = ptr.y - settings.icons[idx].virtY;
+      canvas.setPointerCapture(ptr.pointerId);
+    }
+  },
+  onMove(ptr) {
+    if (state.dragging && state.activeIdx !== -1) {
+      const icon = settings.icons[state.activeIdx];
+      const s = settings.iconSize;
+      const rawX = Numbers.clamp(ptr.x - state.dragOffsetX, 0, size.cssW - s);
+      const rawY = Numbers.clamp(ptr.y - state.dragOffsetY, settings.menubarHeight, size.cssH - s - 20);
+
+      state.rawX = rawX;
+      state.rawY = rawY;
+      if (ptr.pointerType === `pen`) state.lastPressure = ptr.pressure;
+
+      const pos = snapWithPressure(rawX, rawY, ptr.pressure);
+      icon.targetX = pos.x;
+      icon.targetY = pos.y;
+      updateDebug(ptr);
+    } else {
+      const idx = hitIcon(ptr.x, ptr.y);
+      canvas.style.cursor = idx !== -1 ? `grab` : `default`;
+    }
+  },
+  onUp(ptr) {
+    if (state.dragging && state.activeIdx !== -1) {
+      const icon = settings.icons[state.activeIdx];
+      const pressure = ptr.pointerType === `pen` ? state.lastPressure : 0;
+      const pos = snapWithPressure(state.rawX, state.rawY, pressure);
+      icon.targetX = pos.x;
+      icon.targetY = pos.y;
+      state.lastPressure = 0;
+    }
+    if (state.dragging) canvas.style.cursor = `grab`;
+    state.dragging = false;
+    state.activeIdx = -1;
+  },
 });
-
-canvas.addEventListener(`pointermove`, (e) => {
-  const x = e.offsetX;
-  const y = e.offsetY;
-
-  if (state.dragging && state.activeIdx !== -1) {
-    const icon = settings.icons[state.activeIdx];
-    const s = settings.iconSize;
-    const rawX = Numbers.clamp(x - state.dragOffsetX, 0, state.cssW - s);
-    const rawY = Numbers.clamp(y - state.dragOffsetY, settings.menubarHeight, state.cssH - s - 20);
-
-    // Store raw position and latest pressure for use at drop time
-    state.rawX = rawX;
-    state.rawY = rawY;
-    const pressure = e.pointerType === `pen` ? (e.pressure ?? 0) : 0;
-    if (e.pointerType === `pen`) state.lastPressure = pressure;
-
-    // During drag: pressure controls snap live
-    const pos = snapWithPressure(rawX, rawY, pressure);
-    icon.targetX = pos.x;
-    icon.targetY = pos.y;
-    updateDebug(e);
-  } else {
-    const idx = hitIcon(x, y);
-    canvas.style.cursor = idx !== -1 ? `grab` : `default`;
-  }
-});
-
-canvas.addEventListener(`pointerup`, (e) => {
-  if (state.dragging && state.activeIdx !== -1) {
-    const icon = settings.icons[state.activeIdx];
-    // Use lastPressure from pointermove — pointerup pressure is 0 on lift
-    const pressure = e.pointerType === `pen` ? state.lastPressure : 0;
-    const pos = snapWithPressure(state.rawX, state.rawY, pressure);
-    icon.targetX = pos.x;
-    icon.targetY = pos.y;
-    state.lastPressure = 0;
-  }
-  if (state.dragging) canvas.style.cursor = `grab`;
-  state.dragging = false;
-  state.activeIdx = -1;
-});
-
-canvas.addEventListener(`pointercancel`, () => {
-  state.dragging = false;
-  state.activeIdx = -1;
-});
-
-// ─── Physics loop ─────────────────────────────────────────────────────────────
 
 const loop = continuously(() => {
   for (const icon of settings.icons) {
-    const fx = (icon.targetX - icon.virtX) * settings.pull;
-    const fy = (icon.targetY - icon.virtY) * settings.pull;
-    icon.velX = (icon.velX + fx) * (1 - settings.friction);
-    icon.velY = (icon.velY + fy) * (1 - settings.friction);
+    physicsStep(icon, { friction: settings.friction, pull: settings.pull, weight: 1 });
     icon.virtX += icon.velX;
     icon.virtY += icon.velY;
   }
@@ -182,12 +146,12 @@ const loop = continuously(() => {
 loop.start();
 
 function drawBackground() {
-  const grad = ctx.createLinearGradient(0, 0, state.cssW, state.cssH);
+  const grad = ctx.createLinearGradient(0, 0, size.cssW, size.cssH);
   grad.addColorStop(0, `#0f0c29`);
   grad.addColorStop(0.5, `#1a1a4e`);
   grad.addColorStop(1, `#24243e`);
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, state.cssW, state.cssH);
+  ctx.fillRect(0, 0, size.cssW, size.cssH);
 }
 
 function rrect(x, y, w, h, r) {
@@ -243,12 +207,12 @@ function drawIcon(icon, active) {
 function drawMenubar() {
   const h = settings.menubarHeight;
   ctx.fillStyle = `rgba(0,0,0,0.45)`;
-  ctx.fillRect(0, 0, state.cssW, h);
+  ctx.fillRect(0, 0, size.cssW, h);
   ctx.strokeStyle = `rgba(255,255,255,0.08)`;
   ctx.lineWidth = 0.5;
   ctx.beginPath();
   ctx.moveTo(0, h);
-  ctx.lineTo(state.cssW, h);
+  ctx.lineTo(size.cssW, h);
   ctx.stroke();
 
   const now = new Date();
@@ -257,14 +221,13 @@ function drawMenubar() {
   ctx.fillStyle = `rgba(255,255,255,0.8)`;
   ctx.textAlign = `right`;
   ctx.textBaseline = `middle`;
-  ctx.fillText(timeStr, state.cssW - 14, h / 2);
-
+  ctx.fillText(timeStr, size.cssW - 14, h / 2);
   ctx.textAlign = `left`;
   ctx.fillText(`Desktop`, 14, h / 2);
 }
 
 function draw() {
-  ctx.clearRect(0, 0, state.cssW, state.cssH);
+  ctx.clearRect(0, 0, size.cssW, size.cssH);
   drawBackground();
 
   const { icons } = settings;
@@ -276,11 +239,12 @@ function draw() {
   drawMenubar();
 }
 
-function updateDebug(e) {
-  const pressure = e.pointerType === `pen` ? (e.pressure ?? 0) : null;
+/** @param {{ pointerType: string, pressure: number }} ptr */
+function updateDebug(ptr) {
+  const pressure = ptr.pointerType === `pen` ? ptr.pressure : null;
   const snapPct = pressure == null ? 100 : Math.round((1 - Numbers.clamp(pressure, 0, 1)) * 100);
   debug.textContent =
-    `type: ${e.pointerType}` +
+    `type: ${ptr.pointerType}` +
     (pressure != null ? `   |   pressure: ${pressure.toFixed(2)}` : ``) +
     `   |   snap: ${snapPct}%`;
 }

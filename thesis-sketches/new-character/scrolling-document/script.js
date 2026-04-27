@@ -1,6 +1,8 @@
 import { continuously } from "@ixfx/flow.js";
+import { setupCanvas } from "../../shared/canvas-setup.js";
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById(`canvas`));
+// ctx declared before setupCanvas so buildLayout (called in onResize) can use it
 const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext(`2d`));
 
 const settings = {
@@ -22,7 +24,7 @@ const settings = {
       },
     },
     smooth: {
-      hitPadding: 0, 
+      hitPadding: 0,
       apply(/** @type {number} */ delta) {
         return delta * 2;
       },
@@ -48,13 +50,13 @@ const settings = {
       { text: `Most digital interfaces treat all content the same, scrolling through a Word document feels identical whether you're passing over a title or a footnote. But in the physical world, things have different weights, textures, and resistances. Some things are harder to move past than others, and that difficulty carries information. This sketch asks what would happen if that was true digitally too. Headings and highlighted passages,` },
       { text: `content that carries more semantic meaning,`, highlight: true },
       { text: `requires more effort to drag while ordinary body text has no resistance. The hierarchy of the document becomes something you feel, not just read with your eyes. ` },
-    ]},
+    ] },
     { type: `h2`, text: `Heading 2` },
     { type: `body`, segments: [
       { text: `Nam id felis nec neque gravida accumsan. Interdum et malesuada fames ac ante ipsum primis in faucibus. Donec rutrum lacinia ultricies. Vivamus lobortis tempus nunc at finibus. Vivamus aliquet vitae magna at convallis. Praesent sollicitudin massa sit amet egestas imperdiet. Duis eu velit hendrerit, finibus arcu a, tempus urna. ` },
       { text: `Vestibulum at orci vitae lorem consequat faucibus. Fusce consectetur varius condimentum.`, highlight: true },
       { text: ` Quisque finibus, arcu eu dignissim consectetur, justo est mollis leo, non feugiat orci nisl vitae elit. Proin ornare turpis augue, a lacinia ligula pretium a. In semper, orci nec vehicula pulvinar, sapien augue feugiat velit, ac semper odio odio quis lacus.` },
-    ]},
+    ] },
     { type: `body`, text: `Donec tempor malesuada maximus. Integer vel lorem eu ante vulputate fringilla vel sit amet mi. Morbi sed odio dapibus, bibendum velit ut, tempor ex. Quisque in molestie sem, at varius mi. Etiam in feugiat metus. Fusce at augue sit amet nunc ultrices accumsan ac et lectus. Pellentesque est ex, ultrices vitae nulla at, ullamcorper interdum odio.` },
     { type: `h2`, text: `Heading 3` },
     { type: `body`, text: `Aenean eget porttitor nibh, eget sodales massa. Ut quis libero elit. Vivamus condimentum ac velit vitae molestie. Quisque tincidunt volutpat ipsum sit amet faucibus. Curabitur ullamcorper risus ac leo mattis, id ultrices arcu tincidunt. Vivamus et egestas libero, vel mollis felis. Nunc efficitur ligula quis libero posuere pharetra. Donec at enim dolor. Maecenas rutrum egestas mollis. Quisque eu elit lectus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.` },
@@ -64,7 +66,7 @@ const settings = {
       { text: `Duis id diam a tellus tincidunt imperdiet ac non enim. Aliquam imperdiet tortor vel arcu tincidunt mollis. Morbi vel nisi vitae urna ultrices fringilla. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam mi orci, facilisis vel rhoncus eget, mollis sed enim. Phasellus sed magna tempus, lobortis lorem non, aliquam arcu. Etiam ut porttitor purus. Quisque at mollis ipsum, nec laoreet nisl. ` },
       { text: `Nulla facilisi. Maecenas sit amet risus non nibh bibendum volutpat. Vestibulum nisl libero, porta vel elit non, dignissim suscipit leo.`, highlight: true },
       { text: ` Nullam ac bibendum augue. Ut nisi dolor, luctus ac nisi vitae, facilisis sodales sapien. Aliquam vitae risus est. Morbi blandit urna eu magna volutpat maximus.` },
-    ]},
+    ] },
     { type: `body`, text: `Fusce sit amet nunc sit amet mi efficitur congue. Morbi sapien sem, egestas eu est eu, vehicula facilisis elit. Phasellus gravida ullamcorper velit. In ut nisi quis risus lacinia elementum at vel lacus. Etiam id sem ac tortor consectetur interdum a sit amet lorem. Curabitur egestas massa ut orci tempus condimentum. Duis vitae sollicitudin odio. Nunc rhoncus dui sed dui pellentesque, non maximus lectus dictum.` },
     { type: `h2`, text: `Heading 5` },
     { type: `body`, text: `Vivamus sodales porta magna, in rutrum quam consectetur sit amet. Curabitur maximus, quam vel feugiat viverra, mauris risus tincidunt odio, eu porttitor mi urna sit amet augue. Nunc euismod tempor dui ac lacinia. Cras blandit sem eget molestie bibendum. Fusce nec mattis metus, a pretium velit. Quisque est risus, ultrices dapibus dolor non, congue tincidunt metus. Vestibulum facilisis sollicitudin sapien, at aliquet felis finibus eu. In tempor euismod elementum. Pellentesque ac libero ut eros viverra pharetra ut non arcu. Etiam nec feugiat massa. Nam eget elementum nibh, at tincidunt dolor.` },
@@ -72,7 +74,6 @@ const settings = {
 };
 
 let state = {
-  dpr: window.devicePixelRatio || 1,
   cssWidth: 0,
   cssHeight: 0,
   contentOffset: 0,
@@ -100,10 +101,10 @@ function countWrappedLines(/** @type {string} */ text, /** @type {number} */ max
   let lines = 0;
   let current = [];
   for (const word of words) {
-    const test = [...current, word].join(` `);
+    const test = [ ...current, word ].join(` `);
     if (ctx.measureText(test).width > maxW && current.length > 0) {
       lines++;
-      current = [word];
+      current = [ word ];
     } else {
       current.push(word);
     }
@@ -129,16 +130,16 @@ function buildLayout(/** @type {number} */ docW) {
     } else if (block.type === `h2`) {
       h = 28;
     } else {
-      const fullText = block.segments
-        ? block.segments.map(s => s.text).join(``)
-        : block.text;
+      const fullText = block.segments ?
+        block.segments.map(s => s.text).join(``) :
+        block.text;
       ctx.font = `13px 'Times New Roman', serif`;
       const lines = countWrappedLines(fullText, textW);
       h = lines * lineH + 20;
     }
-    const highlightZones = block.segments
-      ? computeHighlightZones(block.segments, textW, lineH, y)
-      : null;
+    const highlightZones = block.segments ?
+      computeHighlightZones(block.segments, textW, lineH, y) :
+      null;
     layout.push({ block, zone: zoneForType(block.type), y, h, highlightZones });
     y += h;
   }
@@ -157,9 +158,10 @@ function computeHighlightZones(segments, maxW, lineH, blockDocY) {
   const lines = [];
   let current = [];
   for (const token of tokens) {
-    const testW = ctx.measureText([...current, token].map(t => t.word).join(` `)).width;
-    if (testW > maxW && current.length > 0) { lines.push(current); current = [token]; }
-    else current.push(token);
+    const testW = ctx.measureText([ ...current, token ].map(t => t.word).join(` `)).width;
+    if (testW > maxW && current.length > 0) {
+      lines.push(current); current = [ token ];
+    } else current.push(token);
   }
   if (current.length > 0) lines.push(current);
 
@@ -172,21 +174,11 @@ function computeHighlightZones(segments, maxW, lineH, blockDocY) {
   return zones;
 }
 
-function resizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
-  const cssWidth = window.innerWidth;
-  const cssHeight = window.innerHeight;
-  canvas.width = Math.floor(cssWidth * dpr);
-  canvas.height = Math.floor(cssHeight * dpr);
-  canvas.style.width = `${cssWidth}px`;
-  canvas.style.height = `${cssHeight}px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(dpr, dpr);
-  saveState({ dpr, cssWidth, cssHeight });
-  buildLayout(Math.min(settings.docMaxW, cssWidth - 40));
-}
-window.addEventListener(`resize`, resizeCanvas);
-resizeCanvas();
+// setupCanvas handles HiDPI init and resize; onResize updates state and rebuilds layout
+setupCanvas(canvas, (cssW, cssH) => {
+  saveState({ cssWidth: cssW, cssHeight: cssH });
+  buildLayout(Math.min(settings.docMaxW, cssW - 40));
+});
 
 canvas.addEventListener(`pointerdown`, (e) => {
   if (e.pointerType === `touch`) return;
@@ -240,7 +232,7 @@ canvas.addEventListener(`pointermove`, (e) => {
     patch.contentOffset = clampOffset(contentOffset + newActiveZone.apply(-delta));
   }
 
-  saveState(patch)
+  saveState(patch);
 });
 
 canvas.addEventListener(`pointerup`, stopScroll);
@@ -293,12 +285,10 @@ continuously(() => {
       ctx.font = `bold 24px 'Times New Roman', serif`;
       ctx.fillStyle = colors.h1;
       ctx.fillText(block.text, tx, screenY + 26);
-
     } else if (block.type === `h2`) {
       ctx.font = `bold 16px 'Times New Roman', serif`;
       ctx.fillStyle = colors.h2;
       ctx.fillText(block.text, tx, screenY + 20);
-
     } else {
       ctx.font = `13px 'Times New Roman', serif`;
       ctx.fillStyle = colors.body;
@@ -313,6 +303,12 @@ continuously(() => {
   ctx.restore();
 }).start();
 
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} text
+ * @param {number} x @param {number} y @param {number} maxW @param {number} lineH
+ * @param {string|null} [highlightColor]
+ */
 function wrapText(ctx, text, x, y, maxW, lineH, highlightColor = null) {
   const words = text.split(` `);
   const lines = [];
@@ -334,9 +330,9 @@ function wrapText(ctx, text, x, y, maxW, lineH, highlightColor = null) {
     const isLast = i === lines.length - 1;
 
     if (highlightColor) {
-      const lineW = isLast
-        ? ctx.measureText(lineWords.join(` `)).width
-        : maxW;
+      const lineW = isLast ?
+        ctx.measureText(lineWords.join(` `)).width :
+        maxW;
       ctx.fillStyle = highlightColor;
       ctx.fillRect(x - 1, y - lineH + 5, lineW + 2, lineH - 2);
       ctx.fillStyle = `#333`;
@@ -345,7 +341,7 @@ function wrapText(ctx, text, x, y, maxW, lineH, highlightColor = null) {
     if (isLast || lineWords.length === 1) {
       ctx.fillText(lineWords.join(` `), x, y);
     } else {
-      const totalWordW = lineWords.reduce((sum, w) => sum + ctx.measureText(w).width, 0);
+      const totalWordW = lineWords.reduce((sum, /** @type {string} */ w) => sum + ctx.measureText(w).width, 0);
       const gap = (maxW - totalWordW) / (lineWords.length - 1);
       let wx = x;
       for (const word of lineWords) {
@@ -358,6 +354,11 @@ function wrapText(ctx, text, x, y, maxW, lineH, highlightColor = null) {
   }
 }
 
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Array<{text: string, highlight?: boolean}>} segments
+ * @param {number} x @param {number} y @param {number} maxW @param {number} lineH
+ */
 function wrapSegments(ctx, segments, x, y, maxW, lineH) {
   const tokens = [];
   for (const seg of segments) {
@@ -370,10 +371,10 @@ function wrapSegments(ctx, segments, x, y, maxW, lineH) {
   const lines = [];
   let current = [];
   for (const token of tokens) {
-    const testW = ctx.measureText([...current, token].map(t => t.word).join(` `)).width;
+    const testW = ctx.measureText([ ...current, token ].map(t => t.word).join(` `)).width;
     if (testW > maxW && current.length > 0) {
       lines.push(current);
-      current = [token];
+      current = [ token ];
     } else {
       current.push(token);
     }
@@ -385,9 +386,9 @@ function wrapSegments(ctx, segments, x, y, maxW, lineH) {
     const isLast = i === lines.length - 1;
 
     const totalWordW = lineTokens.reduce((sum, t) => sum + ctx.measureText(t.word).width, 0);
-    const gap = (isLast || lineTokens.length === 1)
-      ? ctx.measureText(` `).width
-      : (maxW - totalWordW) / (lineTokens.length - 1);
+    const gap = (isLast || lineTokens.length === 1) ?
+      ctx.measureText(` `).width :
+      (maxW - totalWordW) / (lineTokens.length - 1);
 
     let wx = x;
     for (const token of lineTokens) {
@@ -408,4 +409,4 @@ function wrapSegments(ctx, segments, x, y, maxW, lineH) {
 
     y += lineH;
   }
-};
+}

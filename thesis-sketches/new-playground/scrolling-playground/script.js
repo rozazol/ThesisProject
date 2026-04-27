@@ -1,9 +1,10 @@
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
+import { setupCanvas } from "../../shared/canvas-setup.js";
 
 const settings = {
   scrollSpeed: 1,
-  items: [`#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE`, `#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE`, `#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE`, `#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE`],
+  items: [ `#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE`, `#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE`, `#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE`, `#6AC4A2`, `#5AADEA`, `#E87A5D`, `#F5C842`, `#9B6BFF`, `#FF6BAE` ],
   canvas: /** @type {HTMLCanvasElement} */ (document.getElementById(`canvas`)),
   debug: /** @type {HTMLElement} */ (document.getElementById(`debug`)),
   frictionInput: /** @type {HTMLInputElement} */ (document.getElementById(`friction`)),
@@ -14,12 +15,8 @@ const settings = {
   pullValue: /** @type {HTMLElement} */ (document.getElementById(`pullValue`)),
   weightValue: /** @type {HTMLElement} */ (document.getElementById(`weightValue`)),
 };
-const ctx = /** @type {CanvasRenderingContext2D} */ (settings.canvas.getContext(`2d`));
 
 const state = {
-  dpr: window.devicePixelRatio || 1,
-  cssW: 0,
-  cssH: 0,
   virtY: 0,
   velY: 0,
   targetY: 0,
@@ -27,28 +24,13 @@ const state = {
   lastTouchY: 0,
 };
 
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const cssW = Math.max(1, Math.floor(window.innerWidth));
-  const cssH = Math.max(1, Math.floor(window.innerHeight));
-  settings.canvas.width = Math.floor(cssW * state.dpr);
-  settings.canvas.height = Math.floor(cssH * state.dpr);
-  settings.canvas.style.width = `${cssW}px`;
-  settings.canvas.style.height = `${cssH}px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
+const { ctx, size } = setupCanvas(settings.canvas, (_, cssH) => {
   state.maxScroll = Math.max(0, (settings.items.length - 1) * cssH);
-}
-
-window.addEventListener(`resize`, resizeCanvas);
-resizeCanvas();
+});
 
 settings.canvas.addEventListener(`wheel`, (e) => {
   e.preventDefault();
-  const delta = e.deltaY * settings.scrollSpeed;
-  state.targetY = Numbers.clamp(state.targetY + delta, 0, state.maxScroll);
+  state.targetY = Numbers.clamp(state.targetY + e.deltaY * settings.scrollSpeed, 0, state.maxScroll);
 }, { passive: false });
 
 settings.canvas.addEventListener(`touchstart`, (e) => {
@@ -63,10 +45,9 @@ settings.canvas.addEventListener(`touchmove`, (e) => {
 }, { passive: true });
 
 const loop = continuously(() => {
-  const { frictionInput, pullInput, weightInput } = settings;
-  const weightClamped = Numbers.clamp(+weightInput.value, 1, 100);
-  const friction = Numbers.scale(+frictionInput.value, 0, 100, 0, 0.6);
-  const pull = Numbers.scale(+pullInput.value, 0, 100, 0, 0.4);
+  const weightClamped = Numbers.clamp(+settings.weightInput.value, 1, 100);
+  const friction = Numbers.scale(+settings.frictionInput.value, 0, 100, 0, 0.6);
+  const pull = Numbers.scale(+settings.pullInput.value, 0, 100, 0, 0.4);
   const weight = Numbers.scale(weightClamped, 1, 100, 0.1, 40);
 
   const forceY = (state.targetY - state.virtY) * pull;
@@ -81,11 +62,11 @@ const loop = continuously(() => {
 loop.start();
 
 function draw() {
-  const { cssW, cssH, virtY } = state;
+  const { cssW, cssH } = size;
   ctx.clearRect(0, 0, cssW, cssH);
 
   ctx.save();
-  ctx.translate(0, -virtY);
+  ctx.translate(0, -state.virtY);
 
   const fontSize = Math.min(cssW * 0.06, cssH * 0.1, 64);
   ctx.font = `${fontSize}px Overpass Mono, monospace`;

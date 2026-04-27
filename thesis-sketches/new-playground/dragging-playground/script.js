@@ -1,5 +1,7 @@
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
+import { setupCanvas } from "../../shared/canvas-setup.js";
+import { physicsStep } from "../../shared/physics.js";
 
 const settings = {
   size: 120,
@@ -13,12 +15,8 @@ const settings = {
   pullValue: /** @type {HTMLElement} */ (document.getElementById(`pullValue`)),
   weightValue: /** @type {HTMLElement} */ (document.getElementById(`weightValue`)),
 };
-const ctx = /** @type {CanvasRenderingContext2D} */ (settings.canvas.getContext(`2d`));
 
 const state = {
-  dpr: window.devicePixelRatio || 1,
-  cssW: 0,
-  cssH: 0,
   virtX: 120,
   virtY: 120,
   velX: 0,
@@ -31,20 +29,7 @@ const state = {
   initialized: false,
 };
 
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const rect = settings.canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-  settings.canvas.width = Math.floor(cssW * state.dpr);
-  settings.canvas.height = Math.floor(cssH * state.dpr);
-  settings.canvas.style.width = `${cssW}px`;
-  settings.canvas.style.height = `${cssH}px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
+const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
   if (!state.initialized) {
     state.virtX = (cssW - settings.size) / 2;
     state.virtY = (cssH - settings.size) / 2;
@@ -52,9 +37,7 @@ function resizeCanvas() {
     state.targetY = state.virtY;
     state.initialized = true;
   }
-}
-window.addEventListener(`resize`, resizeCanvas);
-resizeCanvas();
+});
 
 function hitBody(px, py) {
   return (
@@ -84,12 +67,10 @@ settings.canvas.addEventListener(`pointermove`, (e) => {
   const x = e.offsetX,
     y = e.offsetY;
   updateCursor(x, y);
-
   if (state.dragging) {
-    state.targetX = Numbers.clamp(x - state.dragOffsetX, 0, state.cssW - settings.size);
-    state.targetY = Numbers.clamp(y - state.dragOffsetY, 0, state.cssH - settings.size);
+    state.targetX = Numbers.clamp(x - state.dragOffsetX, 0, size.cssW - settings.size);
+    state.targetY = Numbers.clamp(y - state.dragOffsetY, 0, size.cssH - settings.size);
   }
-
   updateDebug(e);
 });
 
@@ -106,14 +87,7 @@ const loop = continuously(() => {
   const pull = Numbers.scale(+settings.pullInput.value, 0, 100, 0, 1);
   const weight = Numbers.scale(weightClamped, 1, 100, 0.1, 40);
 
-  // spring force on each axis independently
-  const forceX = (state.targetX - state.virtX) * pull;
-  const forceY = (state.targetY - state.virtY) * pull;
-
-  state.velX += forceX / weight;
-  state.velY += forceY / weight;
-  state.velX *= (1 - friction);
-  state.velY *= (1 - friction);
+  physicsStep(state, { friction, pull, weight });
   state.virtX += state.velX;
   state.virtY += state.velY;
 
@@ -122,13 +96,9 @@ const loop = continuously(() => {
 loop.start();
 
 function draw() {
-  ctx.clearRect(0, 0, state.cssW, state.cssH);
-
-  const { virtX, virtY } = state;
-  const s = settings.size;
-
+  ctx.clearRect(0, 0, size.cssW, size.cssH);
   ctx.fillStyle = `rgb(0, 0, 0)`;
-  ctx.fillRect(virtX, virtY, s, s);
+  ctx.fillRect(state.virtX, state.virtY, settings.size, settings.size);
 }
 
 function updateDebug(e) {

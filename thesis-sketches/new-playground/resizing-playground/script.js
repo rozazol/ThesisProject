@@ -1,5 +1,6 @@
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
+import { setupCanvas } from "../../shared/canvas-setup.js";
 
 const settings = {
   minSize: 30,
@@ -16,12 +17,8 @@ const settings = {
   pullValue: /** @type {HTMLElement} */           (document.getElementById(`pullValue`)),
   weightValue: /** @type {HTMLElement} */           (document.getElementById(`weightValue`)),
 };
-const ctx = /** @type {CanvasRenderingContext2D} */ (settings.canvas.getContext(`2d`));
 
 const state = {
-  dpr: window.devicePixelRatio || 1,
-  cssW: 0,
-  cssH: 0,
   ax: 120,
   ay: 120,
   virtW: 160,
@@ -37,20 +34,7 @@ const state = {
   initialized: false,
 };
 
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const rect = settings.canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-  settings.canvas.width = Math.floor(cssW * state.dpr);
-  settings.canvas.height = Math.floor(cssH * state.dpr);
-  settings.canvas.style.width = `${cssW}px`;
-  settings.canvas.style.height = `${cssH}px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
+const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
   if (!state.initialized) {
     const s = Math.min(cssW, cssH) * 0.35;
     state.virtW = s;
@@ -61,15 +45,10 @@ function resizeCanvas() {
     state.ay = cssH * 0.1;
     state.initialized = true;
   }
-}
-window.addEventListener(`resize`, resizeCanvas);
-resizeCanvas();
+});
 
 function handlePos() {
-  return {
-    x: state.ax + state.virtW,
-    y: state.ay + state.virtH,
-  };
+  return { x: state.ax + state.virtW, y: state.ay + state.virtH };
 }
 
 function hitHandle(px, py) {
@@ -117,18 +96,20 @@ settings.canvas.addEventListener(`pointermove`, (e) => {
     state.targetW = Numbers.clamp(x - state.ax, settings.minSize, settings.maxSize);
     state.targetH = Numbers.clamp(y - state.ay, settings.minSize, settings.maxSize);
   } else if (state.moving) {
-    state.ax = Numbers.clamp(x - state.moveDx, 0, state.cssW - state.virtW);
-    state.ay = Numbers.clamp(y - state.moveDy, 0, state.cssH - state.virtH);
+    state.ax = Numbers.clamp(x - state.moveDx, 0, size.cssW - state.virtW);
+    state.ay = Numbers.clamp(y - state.moveDy, 0, size.cssH - state.virtH);
   }
 
   updateDebug(e);
 });
 
 settings.canvas.addEventListener(`pointerup`, () => {
-  state.resizing = false; state.moving = false;
+  state.resizing = false;
+  state.moving = false;
 });
 settings.canvas.addEventListener(`pointercancel`, () => {
-  state.resizing = false; state.moving = false;
+  state.resizing = false;
+  state.moving = false;
 });
 
 const loop = continuously(() => {
@@ -138,10 +119,8 @@ const loop = continuously(() => {
   const pull = Numbers.scale(+pullInput.value, 0, 100, 0, 1);
   const weight = Numbers.scale(weightClamped, 1, 100, 0.1, 40);
 
-  // spring force on each axis independently
   const forceW = (state.targetW - state.virtW) * pull;
   const forceH = (state.targetH - state.virtH) * pull;
-
   state.velW += forceW / weight;
   state.velH += forceH / weight;
   state.velW *= (1 - friction);
@@ -157,11 +136,10 @@ const loop = continuously(() => {
 loop.start();
 
 function draw() {
-  ctx.clearRect(0, 0, state.cssW, state.cssH);
+  ctx.clearRect(0, 0, size.cssW, size.cssH);
 
   const { ax, ay, virtW, virtH } = state;
 
-  // square body
   ctx.fillStyle = `rgb(0, 0, 0)`;
   ctx.fillRect(ax, ay, virtW, virtH);
 
@@ -178,7 +156,6 @@ function draw() {
   }
   ctx.restore();
 
-  // handle circle
   ctx.beginPath();
   ctx.arc(hp.x, hp.y, settings.handleRadius, 0, Math.PI * 2);
   ctx.fillStyle = `#fff`;
@@ -189,15 +166,10 @@ function draw() {
 }
 
 function updateDebug(e) {
-  const type = e.pointerType;
-  const x = Math.round(e.offsetX);
-  const y = Math.round(e.offsetY);
   const lagW = Math.abs(state.targetW - state.virtW).toFixed(1);
   const lagH = Math.abs(state.targetH - state.virtH).toFixed(1);
-  const w = Math.round(state.virtW);
-  const h = Math.round(state.virtH);
   settings.debug.textContent =
-    `type: ${type}   |   x: ${x}   y: ${y}   |   size: ${w} × ${h}px   |   lag: ${lagW} × ${lagH}px`;
+    `type: ${e.pointerType}   |   x: ${Math.round(e.offsetX)}   y: ${Math.round(e.offsetY)}   |   size: ${Math.round(state.virtW)} × ${Math.round(state.virtH)}px   |   lag: ${lagW} × ${lagH}px`;
 }
 
 const presets = {

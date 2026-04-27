@@ -1,11 +1,10 @@
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
+import { setupCanvas } from "../../shared/canvas-setup.js";
 
 const settings = Object.freeze({
   canvas: /** @type HTMLCanvasElement */(document.getElementById(`canvas`)),
   debug: /** @type HTMLElement */(document.getElementById(`debug`)),
-  // @ts-ignore
-  ctx: /** @type HTMLCanvasElement */(document.getElementById(`canvas`)).getContext(`2d`),
   minSize: 30,
   maxSize: 800,
   handleHit: 14,
@@ -19,9 +18,6 @@ const settings = Object.freeze({
 });
 
 const state = {
-  DPR: window.devicePixelRatio || 1,
-  cssW: 0,
-  cssH: 0,
   ax: 80,
   ay: 80,
   virtW: 160,
@@ -45,25 +41,7 @@ const state = {
   initialized: false,
 };
 
-function resizeCanvas() {
-  const { canvas, ctx } = settings;
-  state.DPR = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-
-  canvas.width = Math.floor(cssW * state.DPR);
-  canvas.height = Math.floor(cssH * state.DPR);
-  canvas.style.width = `${cssW}px`;
-  canvas.style.height = `${cssH}px`;
-
-  // @ts-ignore
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  // @ts-ignore
-  ctx.scale(state.DPR, state.DPR);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
+const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
   if (!state.initialized) {
     const s = Math.min(cssW, cssH) * 0.35;
     state.virtW = s;
@@ -74,10 +52,7 @@ function resizeCanvas() {
     state.ay = cssH * 0.15;
     state.initialized = true;
   }
-}
-
-window.addEventListener(`resize`, resizeCanvas);
-resizeCanvas();
+});
 
 function cornerPositions() {
   const { ax, ay, virtW, virtH } = state;
@@ -89,6 +64,7 @@ function cornerPositions() {
   };
 }
 
+/** @param {number} px @param {number} py */
 function hitCorner(px, py) {
   const corners = cornerPositions();
   for (const [ name, pos ] of Object.entries(corners)) {
@@ -99,6 +75,7 @@ function hitCorner(px, py) {
   return null;
 }
 
+/** @param {number} px @param {number} py */
 function hitBody(px, py) {
   return (
     px >= state.ax && px <= state.ax + state.virtW &&
@@ -108,17 +85,17 @@ function hitBody(px, py) {
 
 const cornerCursors = { tl: `nwse-resize`, tr: `nesw-resize`, bl: `nesw-resize`, br: `nwse-resize` };
 
+/** @param {number} px @param {number} py */
 function updateCursor(px, py) {
-  const { canvas } = settings;
   if (state.resizing) {
-    canvas.style.cursor = cornerCursors[state.activeCorner];
+    settings.canvas.style.cursor = cornerCursors[state.activeCorner];
   } else if (state.moving) {
-    canvas.style.cursor = `grabbing`;
+    settings.canvas.style.cursor = `grabbing`;
   } else {
     const corner = hitCorner(px, py);
-    if (corner) canvas.style.cursor = cornerCursors[corner];
-    else if (hitBody(px, py)) canvas.style.cursor = `grab`;
-    else canvas.style.cursor = `default`;
+    if (corner) settings.canvas.style.cursor = cornerCursors[corner];
+    else if (hitBody(px, py)) settings.canvas.style.cursor = `grab`;
+    else settings.canvas.style.cursor = `default`;
   }
 }
 
@@ -131,7 +108,6 @@ settings.canvas.addEventListener(`pointerdown`, (e) => {
     state.activeCorner = corner;
     state.lastPx = x;
     state.lastPy = y;
-    // anchor is the opposite corner — it stays fixed while we drag
     state.anchorX = corner.includes(`r`) ? state.ax : state.ax + state.virtW;
     state.anchorY = corner.includes(`b`) ? state.ay : state.ay + state.virtH;
     settings.canvas.setPointerCapture(e.pointerId);
@@ -171,8 +147,8 @@ settings.canvas.addEventListener(`pointermove`, (e) => {
       state.targetH = Numbers.clamp(y - anchorY, minSize, maxSize);
     }
   } else if (state.moving) {
-    state.ax = Numbers.clamp(x - state.moveDx, 0, state.cssW - state.virtW);
-    state.ay = Numbers.clamp(y - state.moveDy, 0, state.cssH - state.virtH);
+    state.ax = Numbers.clamp(x - state.moveDx, 0, size.cssW - state.virtW);
+    state.ay = Numbers.clamp(y - state.moveDy, 0, size.cssH - state.virtH);
   }
 });
 
@@ -217,11 +193,15 @@ const loop = continuously(() => {
   draw();
   updateDebug();
 });
-
 loop.start();
 
 const labelText = `Grab a corner of the window and start resizing it. A window you've just opened feels stiff and cold,the more you work with it, the warmer and more yielding it becomes.`;
 
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} text
+ * @param {number} x @param {number} y @param {number} maxWidth @param {number} lineHeight
+ */
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   const words = text.split(` `);
   let line = ``;
@@ -239,9 +219,7 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 }
 
 function draw() {
-  const { ctx } = settings;
-  if (!ctx) return;
-  ctx.clearRect(0, 0, state.cssW, state.cssH);
+  ctx.clearRect(0, 0, size.cssW, size.cssH);
   const { ax, ay, virtW, virtH } = state;
 
   ctx.save();
@@ -300,7 +278,6 @@ function draw() {
   ctx.strokeStyle = `rgba(0,0,0,0.12)`;
   ctx.lineWidth = 1;
   ctx.stroke();
-
 }
 
 function updateDebug() {
@@ -308,7 +285,6 @@ function updateDebug() {
   const fr = Numbers.interpolate(state.engagement, settings.frictionCold, settings.frictionWarm).toFixed(3);
   const pull = Numbers.interpolate(state.engagement, settings.pullCold, settings.pullWarm).toFixed(3);
   const type = state.lastEvent?.pointerType ?? `—`;
-
   settings.debug.textContent =
     `type: ${type}   |   engagement: ${eng}%   |   friction: ${fr}   |   pull: ${pull}`;
 }
