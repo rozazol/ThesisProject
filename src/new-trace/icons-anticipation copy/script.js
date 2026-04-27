@@ -1,5 +1,5 @@
-import { continuously, timeout } from '@ixfx/flow';
-import * as Numbers from '@ixfx/numbers';
+import { continuously, timeout } from '@ixfx/flow.js';
+import * as Numbers from '@ixfx/numbers.js';
 
 const settings = Object.freeze({
   count: 15,
@@ -19,10 +19,10 @@ let state = {
   greyscaleActive: true,
 };
 
-const toggleBtn = document.getElementById(`greyscale-toggle`) as HTMLButtonElement;
+const toggleBtn = /** @type {HTMLButtonElement} */ (document.getElementById(`greyscale-toggle`));
 toggleBtn.addEventListener(`click`, () => {
   state.greyscaleActive = !state.greyscaleActive;
-  toggleBtn.textContent = `greyscale: ${ state.greyscaleActive ? `on` : `off` }`;
+  toggleBtn.textContent = `greyscale: ${state.greyscaleActive ? `on` : `off`}`;
   toggleBtn.classList.toggle(`active`, state.greyscaleActive);
 });
 
@@ -37,7 +37,7 @@ function makeButtonState() {
   };
 }
 
-const stage = document.getElementById(`stage`) as HTMLElement;
+const stage = /** @type {HTMLElement} */ document.getElementById(`stage`);
 
 const icons = [ `🌐`, `📧`, `🗓`, `📸`, `🎵`, `💬`, `🗺`, `📝`, `⚙️`, `🔍`, `📁`, `🎨`, `📊`, `🎮`, `🔔` ];
 const bgColors = [
@@ -48,14 +48,14 @@ const buttons = Array.from({ length: settings.count }, (_, i) => {
   const el = document.createElement(`button`);
   el.style.cssText = `
     width:54px; height:54px; border-radius:14px;
-    border:none; background:${ bgColors[ i % bgColors.length ] };
+    border:none; background:${bgColors[i % bgColors.length]};
     cursor:pointer; display:flex; align-items:center; justify-content:center;
     user-select:none; outline:none; touch-action:manipulation;
     transform-origin:center bottom; will-change:transform;
     font-size:30px; line-height:1;
     box-shadow: 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
   `;
-  el.textContent = icons[ i % icons.length ];
+  el.textContent = icons[i % icons.length];
   // @ts-ignore
   stage.appendChild(el);
 
@@ -64,7 +64,7 @@ const buttons = Array.from({ length: settings.count }, (_, i) => {
   return { el, s };
 });
 
-function wireButton(el: HTMLButtonElement, s, index: number) {
+function wireButton(el, s, index) {
   const unhoverDelay = timeout(() => {
     if (state.hoveredIndex === index) state.hoveredIndex = -1;
   }, 400);
@@ -97,7 +97,7 @@ continuously(() => {
   const now = performance.now();
 
   for (let i = 0; i < buttons.length; i++) {
-    const { el, s } = buttons[ i ];
+    const { el, s } = buttons[i];
     const dt = Math.min(now - s.lastTime, 50);
     s.lastTime = now;
 
@@ -131,13 +131,13 @@ continuously(() => {
     s.velS *= damp ** t;
     s.scaleY += s.velS * t;
 
-    el.style.transform = `translateY(${ s.liftY.toFixed(2) }px) scale(${ s.scaleY.toFixed(4) })`;
-    el.style.filter = state.greyscaleActive ? `grayscale(${ (1 - e).toFixed(3) })` : ``;
+    el.style.transform = `translateY(${s.liftY.toFixed(2)}px) scale(${s.scaleY.toFixed(4)})`;
+    el.style.filter = state.greyscaleActive ? `grayscale(${(1 - e).toFixed(3)})` : ``;
 
     const shadowA = isHovered ? Math.round(e * 18) : 0;
     const shadowY = Math.round(-s.liftY * 0.6);
     el.style.boxShadow = shadowA > 0 ?
-      `0 ${ shadowY }px ${ Math.round(shadowA * 1.5) }px rgba(0,0,0,${ (shadowA / 100).toFixed(2) })` :
+      `0 ${shadowY}px ${Math.round(shadowA * 1.5)}px rgba(0,0,0,${(shadowA / 100).toFixed(2)})` :
       `none`;
   }
 }).start();

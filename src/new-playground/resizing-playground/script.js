@@ -1,32 +1,22 @@
-<<<<<<<< HEAD:src/new-playground/resizing-playground/script.js
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
-========
-import { continuously } from "@ixfx/flow";
-import * as Numbers from "@ixfx/numbers";
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/resizing-playground/script.ts
 
 const settings = {
   minSize: 30,
   maxSize: 800,
   handleRadius: 8,
   handleHit: 14,
-  canvas: document.getElementById(`canvas`) as HTMLCanvasElement,
-  debug: document.getElementById(`debug`) as HTMLElement,
-  frictionInput: document.getElementById(`friction`) as HTMLInputElement,
-  pullInput: document.getElementById(`pull`) as HTMLInputElement,
-  weightInput: document.getElementById(`weight`) as HTMLInputElement,
-  presetsInput: document.getElementById(`presets`) as HTMLSelectElement,
-  frictionValue: document.getElementById(`frictionValue`) as HTMLSelectElement,
-  pullValue: document.getElementById(`pullValue`) as HTMLElement,
-  weightValue: document.getElementById(`weightValue`) as HTMLElement,
+  canvas: /** @type {HTMLCanvasElement} */  (document.getElementById(`canvas`)),
+  debug: /** @type {HTMLElement} */         (document.getElementById(`debug`)),
+  frictionInput: /** @type {HTMLInputElement} */    (document.getElementById(`friction`)),
+  pullInput: /** @type {HTMLInputElement} */     (document.getElementById(`pull`)),
+  weightInput: /** @type {HTMLInputElement} */     (document.getElementById(`weight`)),
+  presetsInput: /** @type {HTMLSelectElement} */    (document.getElementById(`presets`)),
+  frictionValue: /** @type {HTMLElement} */          (document.getElementById(`frictionValue`)),
+  pullValue: /** @type {HTMLElement} */           (document.getElementById(`pullValue`)),
+  weightValue: /** @type {HTMLElement} */           (document.getElementById(`weightValue`)),
 };
-<<<<<<<< HEAD:src/new-playground/resizing-playground/script.js
-========
-
-const ctx = settings.canvas.getContext(`2d`)!;
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/resizing-playground/script.ts
 
 const state = {
   ax: 120,
@@ -44,24 +34,7 @@ const state = {
   initialized: false,
 };
 
-<<<<<<<< HEAD:src/new-playground/resizing-playground/script.js
 const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
-========
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const rect = settings.canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-  settings.canvas.width = Math.floor(cssW * state.dpr);
-  settings.canvas.height = Math.floor(cssH * state.dpr);
-  settings.canvas.style.width = `${ cssW }px`;
-  settings.canvas.style.height = `${ cssH }px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/resizing-playground/script.ts
   if (!state.initialized) {
     const s = Math.min(cssW, cssH) * 0.35;
     state.virtW = s;
@@ -196,11 +169,7 @@ function updateDebug(e) {
   const lagW = Math.abs(state.targetW - state.virtW).toFixed(1);
   const lagH = Math.abs(state.targetH - state.virtH).toFixed(1);
   settings.debug.textContent =
-<<<<<<<< HEAD:src/new-playground/resizing-playground/script.js
     `type: ${e.pointerType}   |   x: ${Math.round(e.offsetX)}   y: ${Math.round(e.offsetY)}   |   size: ${Math.round(state.virtW)} × ${Math.round(state.virtH)}px   |   lag: ${lagW} × ${lagH}px`;
-========
-    `type: ${ type }   |   x: ${ x }   y: ${ y }   |   size: ${ w } × ${ h }px   |   lag: ${ lagW } × ${ lagH }px`;
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/resizing-playground/script.ts
 }
 
 const presets = {
@@ -212,7 +181,7 @@ const presets = {
 };
 
 settings.presetsInput.addEventListener(`change`, () => {
-  const preset = presets[ settings.presetsInput.value ];
+  const preset = presets[settings.presetsInput.value];
   if (!preset) return;
   settings.frictionInput.value = String(preset.friction);
   settings.pullInput.value = String(preset.pull);

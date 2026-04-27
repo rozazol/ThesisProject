@@ -1,9 +1,7 @@
-import { Forces } from "@ixfx/modulation";
-import { continuously } from "@ixfx/flow";
-import { clamp, interpolate } from "@ixfx/numbers";
-import { Easings } from "@ixfx/modulation";
-import { BoundaryKey, Word, WordBoundary } from "./types";
-import { Point } from "@ixfx/geometry";
+import { Forces } from "@ixfx/modulation.js";
+import { continuously } from "@ixfx/flow.js";
+import { clamp, interpolate } from "@ixfx/numbers.js";
+import { Easings } from "@ixfx/modulation.js";
 
 const settings = {
   paragraphs: [
@@ -15,7 +13,7 @@ const settings = {
   tools: [
     {
       id: `fine`,
-      boundaryKey: `word` as BoundaryKey,
+      boundaryKey: `word`,
       edgeRadius: 18,
       snapStrength: 0.90,
       frictionNear: 0.30,
@@ -24,7 +22,7 @@ const settings = {
     },
     {
       id: `medium`,
-      boundaryKey: `sentence` as BoundaryKey,
+      boundaryKey: `sentence`,
       edgeRadius: 55,
       snapStrength: 0.45,
       frictionNear: 0.20,
@@ -33,7 +31,7 @@ const settings = {
     },
     {
       id: `broad`,
-      boundaryKey: `paragraph` as BoundaryKey,
+      boundaryKey: `paragraph`,
       edgeRadius: 120,
       snapStrength: 0.35,
       frictionNear: 0.14,
@@ -52,15 +50,19 @@ const settings = {
   textColor: `#1a1a1a`,
   btnGap: 10,
 
-  canvas: document.getElementById(`canvas`) as HTMLCanvasElement,
-  debug: document.getElementById(`debug`)!,
-  toggleBtn: document.getElementById(`toggleBtn`) as HTMLButtonElement,
-  vizCanvas: document.getElementById(`vizCanvas`) as HTMLCanvasElement,
-  vizToggleBtn: document.getElementById(`vizToggleBtn`) as HTMLButtonElement,
+  canvas: /** @type {HTMLCanvasElement} */ (document.getElementById(`canvas`)),
+  debug: /** @type {HTMLElement} */ (document.getElementById(`debug`)),
+  toggleBtn: /** @type {HTMLButtonElement} */ (document.getElementById(`toggleBtn`)),
+  vizCanvas: /** @type {HTMLCanvasElement} */ (document.getElementById(`vizCanvas`)),
+  vizToggleBtn: /** @type {HTMLButtonElement} */ (document.getElementById(`vizToggleBtn`)),
 };
 
-const ctx = settings.canvas.getContext(`2d`)!
-const vizCtx = settings.vizCanvas.getContext(`2d`)!
+const ctx = /** @type {CanvasRenderingContext2D} */ (
+  settings.canvas.getContext(`2d`)
+);
+const vizCtx = /** @type {CanvasRenderingContext2D} */ (
+  settings.vizCanvas.getContext(`2d`)
+);
 
 let toolIndex = 0;
 let inputMode = `pressure`;
@@ -68,7 +70,7 @@ let vizVisible = true;
 
 settings.toggleBtn.addEventListener(`click`, () => {
   inputMode = inputMode === `pressure` ? `tilt` : `pressure`;
-  settings.toggleBtn.textContent = `by: ${ inputMode }`;
+  settings.toggleBtn.textContent = `by: ${inputMode}`;
   settings.toggleBtn.classList.toggle(`tilt`, inputMode === `tilt`);
 });
 
@@ -79,22 +81,21 @@ settings.vizToggleBtn.addEventListener(`click`, () => {
   settings.vizToggleBtn.textContent = vizVisible ? `◉` : `○`;
 });
 
-
 const state = {
   dpr: 1,
   cssW: 0,
   cssH: 0,
   dragging: false,
-  selectStart: null as number | null,
-  selectStartY: null as number | null,
+  selectStart: /** @type {number | null} */ (null),
+  selectStartY: /** @type {number | null} */ (null),
   targetX: 0,
   pointerY: 0,
   pressure: 0,
   tiltX: 0,
   tiltY: 0,
-  words: [] as Word[],
-  boundaries: [] as WordBoundary[],
-  activeLineY: null as number | null,
+  words: /** @type {{ word: string, x: number, y: number, width: number, height: number, isSentenceEnd: boolean, isParaEnd: boolean, pi: number }[]} */ ([]),
+  boundaries: /** @type {{ word: number[], sentence: number[], paragraph: number[], y: number }[]} */ ([]),
+  activeLineY: /** @type {number | null} */ (null),
 };
 
 let cursor = { position: { x: 0.5, y: 0.5 }, mass: 1 };
@@ -109,7 +110,7 @@ function layoutWords() {
     paragraphs,
   } = settings;
 
-  ctx.font = `${ fontsize }px ${ fontFamily }`;
+  ctx.font = `${fontsize}px ${fontFamily}`;
   const spaceW = ctx.measureText(` `).width;
   const lineH = fontsize * lineHeight;
   const maxW = state.cssW - padding * 2;
@@ -117,10 +118,10 @@ function layoutWords() {
   state.words = [];
   state.boundaries = [];
 
-  const sort = (s: number[]) => [ ...s ].sort((a, b) => a - b);
+  const sort = (s) => [ ...s ].sort((a, b) => a - b);
 
   const lineMap = new Map();
-  const getLine = (lineY: number) => {
+  const getLine = (lineY) => {
     if (!lineMap.has(lineY)) {
       lineMap.set(lineY, { wb: new Set(), sb: new Set(), pb: new Set() });
     }
@@ -132,10 +133,10 @@ function layoutWords() {
   for (let pi = 0; pi < paragraphs.length; pi++) {
     if (pi > 0) y += lineH + paragraphGap;
     let x = padding;
-    const rawWords = paragraphs[ pi ].split(` `);
+    const rawWords = paragraphs[pi].split(` `);
 
     for (let wi = 0; wi < rawWords.length; wi++) {
-      const word = rawWords[ wi ];
+      const word = rawWords[wi];
       const w = ctx.measureText(word).width;
 
       if (x + w > padding + maxW && x !== padding) {
@@ -193,15 +194,15 @@ function resize() {
   const vizSize = 36;
   settings.vizCanvas.width = Math.round(vizSize * state.dpr);
   settings.vizCanvas.height = Math.round(vizSize * state.dpr);
-  settings.vizCanvas.style.width = `${ vizSize }px`;
-  settings.vizCanvas.style.height = `${ vizSize }px`;
+  settings.vizCanvas.style.width = `${vizSize}px`;
+  settings.vizCanvas.style.height = `${vizSize}px`;
   vizCtx.setTransform(1, 0, 0, 1, 0, 0);
   vizCtx.scale(state.dpr, state.dpr);
 
   layoutWords();
 }
 
-function nearestBoundary(lx: number, boundaries: number[]) {
+function nearestBoundary(lx, boundaries) {
   let best = null;
   let bestDist = Infinity;
 
@@ -216,11 +217,11 @@ function nearestBoundary(lx: number, boundaries: number[]) {
   return { boundary: best, dist: bestDist };
 }
 
-function nearestLine(py: number, currentLineY: number | null = null) {
+function nearestLine(py, /** @type {number | null} */ currentLineY = null) {
   const lines = [ ...new Set(state.words.map((w) => w.y)) ];
   const nearest = lines.reduce(
     (best, lineY) => Math.abs(lineY - py) < Math.abs(best - py) ? lineY : best,
-    lines[ 0 ]
+    lines[0]
   );
 
   if (currentLineY === null || nearest === currentLineY) return nearest;
@@ -232,8 +233,8 @@ function nearestLine(py: number, currentLineY: number | null = null) {
     : currentLineY;
 }
 
-function getLineBounds(py: number) {
-  let best = state.boundaries[ 0 ];
+function getLineBounds(py) {
+  let best = state.boundaries[0];
   let bestDist = Infinity;
 
   for (const b of state.boundaries) {
@@ -247,14 +248,14 @@ function getLineBounds(py: number) {
   return best;
 }
 
-function toolFromPressure(pressure: number) {
+function toolFromPressure(pressure) {
   return Math.min(
     Math.floor((1 - pressure) * settings.tools.length),
     settings.tools.length - 1
   );
 }
 
-function toolFromTilt(tiltX: number, tiltY: number) {
+function toolFromTilt(tiltX, tiltY) {
   const magnitude = Math.min(Math.hypot(tiltX, tiltY), 90);
   return Math.min(
     Math.floor((magnitude / 90) * settings.tools.length),
@@ -262,7 +263,7 @@ function toolFromTilt(tiltX: number, tiltY: number) {
   );
 }
 
-function getCanvasPos(e: PointerEvent) {
+function getCanvasPos(e) {
   const rect = settings.canvas.getBoundingClientRect();
   return {
     x: e.clientX - rect.left,
@@ -343,9 +344,9 @@ function draw() {
     debug,
   } = settings;
 
-  const tool = tools[ toolIndex ];
+  const tool = tools[toolIndex];
   const paraB = getLineBounds(state.pointerY);
-  const activeBounds = paraB[ tool.boundaryKey ];
+  const activeBounds = paraB[tool.boundaryKey];
 
   if (dragging) {
     const cursorPx = cursor.position.x * cssW;
@@ -389,7 +390,7 @@ function draw() {
   const cursorX = cursor.position.x * cssW;
 
   ctx.clearRect(0, 0, cssW, cssH);
-  ctx.font = `${ fontsize }px ${ fontFamily }`;
+  ctx.font = `${fontsize}px ${fontFamily}`;
   ctx.textBaseline = `alphabetic`;
   ctx.textAlign = `left`;
 
@@ -410,8 +411,8 @@ function draw() {
       const lw = words.filter((w) => w.y === lineY);
       if (!lw.length) continue;
 
-      const last = lw[ lw.length - 1 ];
-      const lineL = lw[ 0 ].x;
+      const last = lw[lw.length - 1];
+      const lineL = lw[0].x;
       const lineR = last.x + last.width;
 
       let hlL;
@@ -456,11 +457,11 @@ function draw() {
     ctx.stroke();
   }
 
-  const vel = (`velocity` in cursor) ? (cursor.velocity as Point).x.toFixed(5) : `0`;
+  const vel = cursor.velocity?.x.toFixed(5) ?? `0`;
   const { dist } = nearestBoundary(cursorX, activeBounds);
-  debug.textContent = `  tool: ${ tool.id }  |  cursorX ${ Math.round(
+  debug.textContent = `  tool: ${tool.id}  |  cursorX ${Math.round(
     cursorX
-  ) }  |  vel.x ${ vel }  |  nearest ${ Math.round(dist) }px`;
+  )}  |  vel.x ${vel}  |  nearest ${Math.round(dist)}px`;
 
   drawViz();
 }

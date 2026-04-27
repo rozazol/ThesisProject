@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:src/new-relation/dragging-snapping/script.js
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
@@ -7,34 +6,6 @@ import { physicsStep } from "../../shared/physics.js";
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById(`canvas`));
 const debug = /** @type {HTMLElement} */ (document.getElementById(`debug`));
-========
-import { continuously } from "@ixfx/flow";
-import { Point } from "@ixfx/geometry";
-import * as Numbers from "@ixfx/numbers";
-
-const canvas = document.getElementById(`canvas`) as HTMLCanvasElement;
-const ctx = canvas.getContext(`2d`)!;
-const debug = document.getElementById(`debug`)!;
-
-type IconDef = {
-  label: string, emoji: string, color: string
-}
-
-type Icon = IconDef & {
-  virtX: number, virtY: number, velX: number, velY: number, targetX: number, targetY: number
-}
-
-const iconDefs: IconDef[] = [
-  { label: `Browser`, emoji: `🌐`, color: `#3B82F6` },
-  { label: `Files`, emoji: `📁`, color: `#F59E0B` },
-  { label: `Music`, emoji: `🎵`, color: `#EC4899` },
-  { label: `Photos`, emoji: `🖼`, color: `#10B981` },
-  { label: `Mail`, emoji: `✉️`, color: `#8B5CF6` },
-  { label: `Settings`, emoji: `⚙️`, color: `#6B7280` },
-  { label: `Notes`, emoji: `📝`, color: `#F97316` },
-  { label: `Calendar`, emoji: `📅`, color: `#EF4444` },
-];
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-relation/dragging-snapping/script.ts
 
 const settings = {
   iconSize: 64,
@@ -42,16 +13,27 @@ const settings = {
   menubarHeight: 28,
   friction: 0.25,
   pull: 0.12,
-  icons: iconDefs.map((def) => ({
-    ...def,
-    virtX: 0,
-    virtY: 0,
-    velX: 0,
-    velY: 0,
-    targetX: 0,
-    targetY: 0,
-  } as Icon))
-} as const;
+  iconDefs: [
+    { label: `Browser`, emoji: `🌐`, color: `#3B82F6` },
+    { label: `Files`, emoji: `📁`, color: `#F59E0B` },
+    { label: `Music`, emoji: `🎵`, color: `#EC4899` },
+    { label: `Photos`, emoji: `🖼`, color: `#10B981` },
+    { label: `Mail`, emoji: `✉️`, color: `#8B5CF6` },
+    { label: `Settings`, emoji: `⚙️`, color: `#6B7280` },
+    { label: `Notes`, emoji: `📝`, color: `#F97316` },
+    { label: `Calendar`, emoji: `📅`, color: `#EF4444` },
+  ],
+};
+
+settings.icons = settings.iconDefs.map((def) => ({
+  ...def,
+  virtX: 0,
+  virtY: 0,
+  velX: 0,
+  velY: 0,
+  targetX: 0,
+  targetY: 0,
+}));
 
 const state = {
   dragging: false,
@@ -64,24 +46,7 @@ const state = {
   initialized: false,
 };
 
-<<<<<<<< HEAD:src/new-relation/dragging-snapping/script.js
 const { ctx, size } = setupCanvas(canvas, (_cssW, _cssH) => {
-========
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-  canvas.width = Math.floor(cssW * state.dpr);
-  canvas.height = Math.floor(cssH * state.dpr);
-  canvas.style.width = `${ cssW }px`;
-  canvas.style.height = `${ cssH }px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-relation/dragging-snapping/script.ts
   if (!state.initialized) {
     const g = settings.gridSize;
     settings.icons.forEach((icon, i) => {
@@ -94,11 +59,11 @@ function resizeCanvas() {
   }
 });
 
-function hitIcon(px: number, py: number) {
+function hitIcon(px, py) {
   const s = settings.iconSize;
   const { icons } = settings;
   for (let i = icons.length - 1; i >= 0; i--) {
-    const ic = icons[ i ];
+    const ic = icons[i];
     if (px >= ic.virtX && px <= ic.virtX + s && py >= ic.virtY && py <= ic.virtY + s) {
       return i;
     }
@@ -106,7 +71,7 @@ function hitIcon(px: number, py: number) {
   return -1;
 }
 
-function snapPosition(x: number, y: number) {
+function snapPosition(x, y) {
   const g = settings.gridSize;
   const s = settings.iconSize;
   return {
@@ -115,7 +80,7 @@ function snapPosition(x: number, y: number) {
   };
 }
 
-function snapWithPressure(rawX: number, rawY: number, pressure: number): Point {
+function snapWithPressure(rawX, rawY, pressure) {
   const snapped = snapPosition(rawX, rawY);
   const t = Numbers.clamp(pressure, 0, 1);
   return {
@@ -124,7 +89,6 @@ function snapWithPressure(rawX: number, rawY: number, pressure: number): Point {
   };
 }
 
-<<<<<<<< HEAD:src/new-relation/dragging-snapping/script.js
 setupPointer(canvas, {
   onDown(ptr) {
     const idx = hitIcon(ptr.x, ptr.y);
@@ -171,70 +135,6 @@ setupPointer(canvas, {
   },
 });
 
-========
-canvas.addEventListener(`pointerdown`, (e) => {
-  const x = e.offsetX;
-  const y = e.offsetY;
-  const idx = hitIcon(x, y);
-  if (idx !== -1) {
-    state.dragging = true;
-    state.activeIdx = idx;
-    state.dragOffsetX = x - settings.icons[ idx ].virtX;
-    state.dragOffsetY = y - settings.icons[ idx ].virtY;
-    canvas.setPointerCapture(e.pointerId);
-  }
-});
-
-canvas.addEventListener(`pointermove`, (e) => {
-  const x = e.offsetX;
-  const y = e.offsetY;
-
-  if (state.dragging && state.activeIdx !== -1) {
-    const icon = settings.icons[ state.activeIdx ];
-    const s = settings.iconSize;
-    const rawX = Numbers.clamp(x - state.dragOffsetX, 0, state.cssW - s);
-    const rawY = Numbers.clamp(y - state.dragOffsetY, settings.menubarHeight, state.cssH - s - 20);
-
-    // Store raw position and latest pressure for use at drop time
-    state.rawX = rawX;
-    state.rawY = rawY;
-    const pressure = e.pointerType === `pen` ? (e.pressure ?? 0) : 0;
-    if (e.pointerType === `pen`) state.lastPressure = pressure;
-
-    // During drag: pressure controls snap live
-    const pos = snapWithPressure(rawX, rawY, pressure);
-    icon.targetX = pos.x;
-    icon.targetY = pos.y;
-    updateDebug(e);
-  } else {
-    const idx = hitIcon(x, y);
-    canvas.style.cursor = idx !== -1 ? `grab` : `default`;
-  }
-});
-
-canvas.addEventListener(`pointerup`, (e) => {
-  if (state.dragging && state.activeIdx !== -1) {
-    const icon = settings.icons[ state.activeIdx ];
-    // Use lastPressure from pointermove — pointerup pressure is 0 on lift
-    const pressure = e.pointerType === `pen` ? state.lastPressure : 0;
-    const pos = snapWithPressure(state.rawX, state.rawY, pressure);
-    icon.targetX = pos.x;
-    icon.targetY = pos.y;
-    state.lastPressure = 0;
-  }
-  if (state.dragging) canvas.style.cursor = `grab`;
-  state.dragging = false;
-  state.activeIdx = -1;
-});
-
-canvas.addEventListener(`pointercancel`, () => {
-  state.dragging = false;
-  state.activeIdx = -1;
-});
-
-// ─── Physics loop ─────────────────────────────────────────────────────────────
-
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-relation/dragging-snapping/script.ts
 const loop = continuously(() => {
   for (const icon of settings.icons) {
     physicsStep(icon, { friction: settings.friction, pull: settings.pull, weight: 1 });
@@ -254,7 +154,7 @@ function drawBackground() {
   ctx.fillRect(0, 0, size.cssW, size.cssH);
 }
 
-function rrect(x: number, y: number, w: number, h: number, r: number) {
+function rrect(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -268,7 +168,7 @@ function rrect(x: number, y: number, w: number, h: number, r: number) {
   ctx.closePath();
 }
 
-function drawIcon(icon: Icon, active: boolean) {
+function drawIcon(icon, active) {
   const { virtX: x, virtY: y } = icon;
   const s = settings.iconSize;
 
@@ -287,7 +187,7 @@ function drawIcon(icon: Icon, active: boolean) {
   ctx.shadowOffsetY = 0;
   ctx.shadowColor = `transparent`;
   ctx.fillStyle = `white`;
-  ctx.font = `${ Math.round(s * 0.48) }px serif`;
+  ctx.font = `${Math.round(s * 0.48)}px serif`;
   ctx.textAlign = `center`;
   ctx.textBaseline = `middle`;
   ctx.fillText(icon.emoji, x + s / 2, y + s / 2);
@@ -334,12 +234,11 @@ function draw() {
   icons.forEach((icon, i) => {
     if (i !== state.activeIdx) drawIcon(icon, false);
   });
-  if (state.activeIdx !== -1) drawIcon(icons[ state.activeIdx ], true);
+  if (state.activeIdx !== -1) drawIcon(icons[state.activeIdx], true);
 
   drawMenubar();
 }
 
-<<<<<<<< HEAD:src/new-relation/dragging-snapping/script.js
 /** @param {{ pointerType: string, pressure: number }} ptr */
 function updateDebug(ptr) {
   const pressure = ptr.pointerType === `pen` ? ptr.pressure : null;
@@ -348,13 +247,4 @@ function updateDebug(ptr) {
     `type: ${ptr.pointerType}` +
     (pressure != null ? `   |   pressure: ${pressure.toFixed(2)}` : ``) +
     `   |   snap: ${snapPct}%`;
-========
-function updateDebug(e: PointerEvent) {
-  const pressure = e.pointerType === `pen` ? (e.pressure ?? 0) : null;
-  const snapPct = pressure == null ? 100 : Math.round((1 - Numbers.clamp(pressure, 0, 1)) * 100);
-  debug.textContent =
-    `type: ${ e.pointerType }` +
-    (pressure != null ? `   |   pressure: ${ pressure.toFixed(2) }` : ``) +
-    `   |   snap: ${ snapPct }%`;
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-relation/dragging-snapping/script.ts
 }

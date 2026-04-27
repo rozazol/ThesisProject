@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
@@ -6,18 +5,6 @@ import { setupCanvas } from "../../shared/canvas-setup.js";
 const settings = Object.freeze({
   canvas: /** @type HTMLCanvasElement */(document.getElementById(`canvas`)),
   debug: /** @type HTMLElement */(document.getElementById(`debug`)),
-========
-import { continuously } from "@ixfx/flow";
-import * as Numbers from "@ixfx/numbers";
-
-const cornerCursors = { tl: `nwse-resize`, tr: `nesw-resize`, bl: `nesw-resize`, br: `nwse-resize` };
-
-
-const settings = Object.freeze({
-  canvas: document.getElementById(`canvas`) as HTMLCanvasElement,
-  debug: document.getElementById(`debug`) as HTMLElement,
-  ctx: (document.getElementById(`canvas`) as HTMLCanvasElement)!.getContext(`2d`)!,
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts
   minSize: 30,
   maxSize: 800,
   handleHit: 14,
@@ -40,7 +27,7 @@ const state = {
   targetW: 160,
   targetH: 160,
   resizing: false,
-  activeCorner: null as string | null,
+  activeCorner: /** @type {string|null} */ (null),
   anchorX: 0,
   anchorY: 0,
   moving: false,
@@ -50,33 +37,11 @@ const state = {
   lastPy: 0,
   engagement: 0,
   lastTime: performance.now(),
-  lastEvent: null as PointerEvent | null,
+  lastEvent: /** @type {PointerEvent|null} */ (null),
   initialized: false,
 };
 
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
 const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
-========
-function resizeCanvas() {
-  const { canvas, ctx } = settings;
-  state.DPR = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-
-  canvas.width = Math.floor(cssW * state.DPR);
-  canvas.height = Math.floor(cssH * state.DPR);
-  canvas.style.width = `${ cssW }px`;
-  canvas.style.height = `${ cssH }px`;
-
-  // @ts-ignore
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  // @ts-ignore
-  ctx.scale(state.DPR, state.DPR);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts
   if (!state.initialized) {
     const s = Math.min(cssW, cssH) * 0.35;
     state.virtW = s;
@@ -99,12 +64,8 @@ function cornerPositions() {
   };
 }
 
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
 /** @param {number} px @param {number} py */
 function hitCorner(px, py) {
-========
-function hitCorner(px: number, py: number) {
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts
   const corners = cornerPositions();
   for (const [ name, pos ] of Object.entries(corners)) {
     const dx = px - pos.x;
@@ -114,43 +75,27 @@ function hitCorner(px: number, py: number) {
   return null;
 }
 
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
 /** @param {number} px @param {number} py */
 function hitBody(px, py) {
-========
-function hitBody(px: number, py: number) {
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts
   return (
     px >= state.ax && px <= state.ax + state.virtW &&
     py >= state.ay && py <= state.ay + state.virtH
   );
 }
 
+const cornerCursors = { tl: `nwse-resize`, tr: `nesw-resize`, bl: `nesw-resize`, br: `nwse-resize` };
 
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
 /** @param {number} px @param {number} py */
 function updateCursor(px, py) {
   if (state.resizing) {
     settings.canvas.style.cursor = cornerCursors[state.activeCorner];
-========
-function updateCursor(px: number, py: number) {
-  const { canvas } = settings;
-  if (state.resizing) {
-    canvas.style.cursor = cornerCursors[ state.activeCorner ];
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts
   } else if (state.moving) {
     settings.canvas.style.cursor = `grabbing`;
   } else {
     const corner = hitCorner(px, py);
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
     if (corner) settings.canvas.style.cursor = cornerCursors[corner];
     else if (hitBody(px, py)) settings.canvas.style.cursor = `grab`;
     else settings.canvas.style.cursor = `default`;
-========
-    if (corner) canvas.style.cursor = cornerCursors[ corner ];
-    else if (hitBody(px, py)) canvas.style.cursor = `grab`;
-    else canvas.style.cursor = `default`;
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts
   }
 }
 
@@ -252,20 +197,16 @@ loop.start();
 
 const labelText = `Grab a corner of the window and start resizing it. A window you've just opened feels stiff and cold,the more you work with it, the warmer and more yielding it becomes.`;
 
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
 /**
  * @param {CanvasRenderingContext2D} ctx
  * @param {string} text
  * @param {number} x @param {number} y @param {number} maxWidth @param {number} lineHeight
  */
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-========
-function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts
   const words = text.split(` `);
   let line = ``;
   for (const word of words) {
-    const test = line ? `${ line } ${ word }` : word;
+    const test = line ? `${line} ${word}` : word;
     if (ctx.measureText(test).width > maxWidth && line) {
       ctx.fillText(line, x, y);
       line = word;
@@ -326,7 +267,7 @@ function draw() {
   for (let i = 0; i < 3; i++) {
     ctx.beginPath();
     ctx.arc(dotStartX + i * dotGap, dotY, dotR, 0, Math.PI * 2);
-    ctx.fillStyle = dotColors[ i ];
+    ctx.fillStyle = dotColors[i];
     ctx.fill();
   }
 
@@ -345,10 +286,5 @@ function updateDebug() {
   const pull = Numbers.interpolate(state.engagement, settings.pullCold, settings.pullWarm).toFixed(3);
   const type = state.lastEvent?.pointerType ?? `—`;
   settings.debug.textContent =
-<<<<<<<< HEAD:src/new-trace/window-warming-up copy/script.js
     `type: ${type}   |   engagement: ${eng}%   |   friction: ${fr}   |   pull: ${pull}`;
 }
-========
-    `type: ${ type }   |   engagement: ${ eng }%   |   friction: ${ fr }   |   pull: ${ pull }`;
-}
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-trace/window-warming-up copy/script.ts

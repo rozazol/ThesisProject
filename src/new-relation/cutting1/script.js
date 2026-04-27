@@ -1,6 +1,6 @@
-import { continuously } from "@ixfx/flow";
-import * as Numbers from "@ixfx/numbers";
-import { Point, Points } from "@ixfx/geometry";
+import { continuously } from "@ixfx/flow.js";
+import * as Numbers from "@ixfx/numbers.js";
+import { Points } from "@ixfx/geometry.js";
 
 // Settings
 const settings = Object.freeze({
@@ -47,16 +47,17 @@ let state = {
     right: c.right.map(p => ({ ...p })),
     hue: c.hue,
   }))),
-  cutPath: [] as Point[],
+  /** @type {{x: number, y: number}[]} */
+  cutPath: [],
 };
-const saveState = (patch: Partial<typeof state>) => {
+const saveState = (patch) => {
   state = { ...state, ...patch };
 };
 
-let cutAverager: Points.PointAverager | null = null;
+let cutAverager = null;
 
-const canvasElement = document.getElementById("c") as HTMLCanvasElement;
-const ctx = canvasElement.getContext("2d")!;
+const canvasElement = /** @type {HTMLCanvasElement} */ (document.getElementById("c"));
+const ctx = /** @type {CanvasRenderingContext2D} */ (canvasElement.getContext("2d"));
 
 function resize() {
   const width = window.innerWidth;
@@ -78,22 +79,22 @@ resize();
 window.addEventListener(`resize`, resize);
 
 // Geometry helpers
-const trackTop = (i: number) => state.timelineTop + i * (settings.trackH + settings.trackGap);
+const trackTop = (i) => state.timelineTop + i * (settings.trackH + settings.trackGap);
 const trackW = () => state.canvasW - settings.padX * 2;
-const toFrac = (x: number) => Numbers.scale(x, settings.padX, settings.padX + trackW(), 0, 1);
-const fromFrac = (f: number) => Numbers.scale(f, 0, 1, settings.padX, settings.padX + trackW());
+const toFrac = (x) => Numbers.scale(x, settings.padX, settings.padX + trackW(), 0, 1);
+const fromFrac = (f) => Numbers.scale(f, 0, 1, settings.padX, settings.padX + trackW());
 
-function trackAtY(y: number) {
+function trackAtY(y) {
   for (let i = 0; i < state.tracks.length; i++) {
     if (y >= trackTop(i) && y <= trackTop(i) + settings.trackH) return i;
   }
   return -1;
 }
 
-function interpPhysics(blend: number) {
+function interpPhysics(blend) {
   const r = settings.physics.razor;
   const s = settings.physics.scissors;
-  const interp = (a: number, b: number) => Numbers.interpolate(blend, a, b,);
+  const interp = (a, b) => Numbers.interpolate(blend, a, b,);
   return {
     pullX: interp(r.pullX, s.pullX),
     frictionX: interp(r.frictionX, s.frictionX),
@@ -105,15 +106,15 @@ function interpPhysics(blend: number) {
 }
 
 // Cut logic
-function clipPathToTrack(cutPath: string | any[], ti: number) {
+function clipPathToTrack(cutPath, ti) {
   const topY = trackTop(ti);
   const botY = topY + settings.trackH;
   const h = settings.trackH;
   const pts = [];
 
   for (let i = 0; i < cutPath.length - 1; i++) {
-    const { x: x0, y: y0 } = cutPath[ i ];
-    const { x: x1, y: y1 } = cutPath[ i + 1 ];
+    const { x: x0, y: y0 } = cutPath[i];
+    const { x: x1, y: y1 } = cutPath[i + 1];
     const dy = y1 - y0;
 
     let tEnter = 0,
@@ -128,10 +129,10 @@ function clipPathToTrack(cutPath: string | any[], ti: number) {
     }
     if (tEnter >= tExit) continue;
 
-    const enter = Points.interpolate(tEnter, cutPath[ i ], cutPath[ i + 1 ]);
-    const exit = Points.interpolate(tExit, cutPath[ i ], cutPath[ i + 1 ]);
+    const enter = Points.interpolate(tEnter, cutPath[i], cutPath[i + 1]);
+    const exit = Points.interpolate(tExit, cutPath[i], cutPath[i + 1]);
 
-    if (!pts.length || Points.distance(/** @type {import('@ixfx/geometry.js').Point} */(pts.at(-1)), enter) > 0.1) pts.push(enter);
+    if (!pts.length || Points.distance(/** @type {import('@ixfx/geometry.js').Point} */ (pts.at(-1)), enter) > 0.1) pts.push(enter);
     if (Points.distance(enter, exit) > 0.1) pts.push(exit);
   }
 
@@ -148,15 +149,15 @@ function applyCut() {
   const tracks = state.tracks.map((track, ti) => {
     const cutEdge = clipPathToTrack(cutPath, ti);
     if (!cutEdge) return track;
-    if (cutEdge.length > 1 && cutEdge[ 0 ].t > cutEdge[ cutEdge.length - 1 ].t) cutEdge.reverse();
+    if (cutEdge.length > 1 && cutEdge[0].t > cutEdge[cutEdge.length - 1].t) cutEdge.reverse();
 
-    const cutFracTop = cutEdge[ 0 ].frac;
-    const cutFracBot = cutEdge[ cutEdge.length - 1 ].frac;
+    const cutFracTop = cutEdge[0].frac;
+    const cutFracBot = cutEdge[cutEdge.length - 1].frac;
 
     return track.flatMap(clip => {
       const margin = 0.006;
-      const inTop = cutFracTop > clip.left[ 0 ].frac + margin && cutFracTop < clip.right[ 0 ].frac - margin;
-      const inBot = cutFracBot > clip.left[ clip.left.length - 1 ].frac + margin && cutFracBot < clip.right[ clip.right.length - 1 ].frac - margin;
+      const inTop = cutFracTop > clip.left[0].frac + margin && cutFracTop < clip.right[0].frac - margin;
+      const inBot = cutFracBot > clip.left[clip.left.length - 1].frac + margin && cutFracBot < clip.right[clip.right.length - 1].frac - margin;
       if (!inTop && !inBot) return [ clip ];
       return [
         { left: clip.left, right: cutEdge, hue: clip.hue },
@@ -187,14 +188,14 @@ function drawTimeline() {
     ctx.roundRect(padX, ty, tw, trackH, 3);
     ctx.clip();
 
-    for (const clip of tracks[ ti ]) {
+    for (const clip of tracks[ti]) {
       ctx.beginPath();
-      ctx.moveTo(fromFrac(clip.left[ 0 ].frac), ty + clip.left[ 0 ].t * trackH);
+      ctx.moveTo(fromFrac(clip.left[0].frac), ty + clip.left[0].t * trackH);
       for (let i = 1; i < clip.left.length; i++) {
-        ctx.lineTo(fromFrac(clip.left[ i ].frac), ty + clip.left[ i ].t * trackH);
+        ctx.lineTo(fromFrac(clip.left[i].frac), ty + clip.left[i].t * trackH);
       }
       for (let i = clip.right.length - 1; i >= 0; i--) {
-        ctx.lineTo(fromFrac(clip.right[ i ].frac), ty + clip.right[ i ].t * trackH);
+        ctx.lineTo(fromFrac(clip.right[i].frac), ty + clip.right[i].t * trackH);
       }
       ctx.closePath();
       ctx.fillStyle = `#F76FA4`;
@@ -219,7 +220,7 @@ function drawCursor() {
   if (!pressing) {
     const guideAlpha = 0.05 * (1 - blend);
     if (guideAlpha > 0.001) {
-      ctx.strokeStyle = `rgba(255,255,255,${ guideAlpha })`;
+      ctx.strokeStyle = `rgba(255,255,255,${guideAlpha})`;
       ctx.lineWidth = 0.5;
       ctx.setLineDash([ 2, 10 ]);
       ctx.beginPath();
@@ -236,8 +237,8 @@ function drawCursor() {
     ctx.lineJoin = `round`;
     ctx.lineCap = `round`;
     ctx.beginPath();
-    ctx.moveTo(state.cutPath[ 0 ].x, state.cutPath[ 0 ].y);
-    for (let i = 1; i < state.cutPath.length; i++) ctx.lineTo(state.cutPath[ i ].x, state.cutPath[ i ].y);
+    ctx.moveTo(state.cutPath[0].x, state.cutPath[0].y);
+    for (let i = 1; i < state.cutPath.length; i++) ctx.lineTo(state.cutPath[i].x, state.cutPath[i].y);
     ctx.stroke();
   } else if (!pressing && onTrack) {
     ctx.strokeStyle = `rgba(255,255,255,0.48)`;
@@ -255,7 +256,7 @@ function drawCursor() {
   const dotAlpha = pressing ? 0.95 : 0.52;
   ctx.beginPath();
   ctx.arc(virtX, virtY, dotRadius, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(255,255,255,${ dotAlpha })`;
+  ctx.fillStyle = `rgba(255,255,255,${dotAlpha})`;
   ctx.fill();
 
   ctx.restore();
@@ -306,10 +307,8 @@ function update() {
     }
   }
 
-  saveState({
-    virtX: newVirtX, virtY: newVirtY, velX: newVelX, velY: newVelY,
-    noiseT: newNoiseT, cutPath: newCutPath
-  });
+  saveState({ virtX: newVirtX, virtY: newVirtY, velX: newVelX, velY: newVelY,
+    noiseT: newNoiseT, cutPath: newCutPath });
 }
 
 // Main loop
@@ -324,15 +323,15 @@ function drawDebug() {
   const ph = interpPhysics(blend);
   const f2 = (n) => n.toFixed(2);
   debugEl.textContent =
-    `pull X:${ f2(ph.pullX) } / Y:${ f2(ph.pullY) }\n` +
-    `friction X:${ f2(ph.frictionX) } / Y:${ f2(ph.frictionY) }\n` +
-    `weight ${ f2(ph.weight) }\n` +
-    `noise ${ f2(ph.noise) }`;
+    `pull X:${f2(ph.pullX)} / Y:${f2(ph.pullY)}\n` +
+    `friction X:${f2(ph.frictionX)} / Y:${f2(ph.frictionY)}\n` +
+    `weight ${f2(ph.weight)}\n` +
+    `noise ${f2(ph.noise)}`;
 }
 
 
 // Pointer events
-const isValidPointer = (e: PointerEvent) => e.pointerType === `mouse` || e.pointerType === `pen`;
+const isValidPointer = (e) => e.pointerType === `mouse` || e.pointerType === `pen`;
 
 canvasElement.addEventListener(`pointermove`, (e) => {
   if (!isValidPointer(e)) return;
@@ -374,6 +373,6 @@ canvasElement.addEventListener(`contextmenu`, (e) => e.preventDefault());
 
 // Toolbar
 document.getElementById(`blend-slider`)?.addEventListener(`input`, (e) => {
-  const blend = Number((e.target as HTMLInputElement).value) / 100;
+  const blend = Number(/** @type {HTMLInputElement} */ (e.target).value) / 100;
   saveState({ blend, velX: 0, velY: 0 });
 });
