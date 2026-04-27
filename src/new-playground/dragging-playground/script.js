@@ -1,12 +1,7 @@
-<<<<<<<< HEAD:src/new-playground/dragging-playground/script.js
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
 import { physicsStep } from "../../shared/physics.js";
-========
-import { continuously } from "@ixfx/flow";
-import * as Numbers from "@ixfx/numbers";
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/dragging-playground/script.ts
 
 const settings = {
   size: 120,
@@ -34,24 +29,7 @@ const state = {
   initialized: false,
 };
 
-<<<<<<<< HEAD:src/new-playground/dragging-playground/script.js
 const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
-========
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const rect = settings.canvas.getBoundingClientRect();
-  const cssW = Math.max(1, Math.floor(rect.width));
-  const cssH = Math.max(1, Math.floor(rect.height));
-  settings.canvas.width = Math.floor(cssW * state.dpr);
-  settings.canvas.height = Math.floor(cssH * state.dpr);
-  settings.canvas.style.width = `${ cssW }px`;
-  settings.canvas.style.height = `${ cssH }px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
-
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/dragging-playground/script.ts
   if (!state.initialized) {
     state.virtX = (cssW - settings.size) / 2;
     state.virtY = (cssH - settings.size) / 2;
@@ -132,7 +110,7 @@ function updateDebug(e) {
   const vx = Math.round(state.virtX);
   const vy = Math.round(state.virtY);
   settings.debug.textContent =
-    `type: ${ type }   |   x: ${ x }   y: ${ y }   |   pos: ${ vx } × ${ vy }px   |   lag: ${ lagX } × ${ lagY }px`;
+    `type: ${type}   |   x: ${x}   y: ${y}   |   pos: ${vx} × ${vy}px   |   lag: ${lagX} × ${lagY}px`;
 }
 
 const presets = {

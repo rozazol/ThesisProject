@@ -1,11 +1,6 @@
-<<<<<<<< HEAD:src/new-playground/scrolling-playground/script.js
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
-========
-import { continuously } from "@ixfx/flow";
-import * as Numbers from "@ixfx/numbers";
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/scrolling-playground/script.ts
 
 const settings = {
   scrollSpeed: 1,
@@ -29,22 +24,7 @@ const state = {
   lastTouchY: 0,
 };
 
-<<<<<<<< HEAD:src/new-playground/scrolling-playground/script.js
 const { ctx, size } = setupCanvas(settings.canvas, (_, cssH) => {
-========
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const cssW = Math.max(1, Math.floor(window.innerWidth));
-  const cssH = Math.max(1, Math.floor(window.innerHeight));
-  settings.canvas.width = Math.floor(cssW * state.dpr);
-  settings.canvas.height = Math.floor(cssH * state.dpr);
-  settings.canvas.style.width = `${ cssW }px`;
-  settings.canvas.style.height = `${ cssH }px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-  state.cssW = cssW;
-  state.cssH = cssH;
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-playground/scrolling-playground/script.ts
   state.maxScroll = Math.max(0, (settings.items.length - 1) * cssH);
 });
 

@@ -1,12 +1,7 @@
-<<<<<<<< HEAD:src/new-character/square-diff-drags copy/script.js
 import { continuously } from "@ixfx/flow.js";
 import * as Numbers from "@ixfx/numbers.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
 import { physicsStep } from "../../shared/physics.js";
-========
-import { continuously } from "@ixfx/flow";
-import * as Numbers from "@ixfx/numbers";
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-character/square-diff-drags copy/script.ts
 
 const settings = {
   squareSize: 80,
@@ -49,22 +44,7 @@ function makeSquare(preset) {
   };
 }
 
-<<<<<<<< HEAD:src/new-character/square-diff-drags copy/script.js
 const { size } = setupCanvas(settings.canvas, (cssW, cssH) => {
-========
-function resizeCanvas() {
-  state.dpr = window.devicePixelRatio || 1;
-  const rect = settings.canvas.getBoundingClientRect();
-  const cssWidth = Math.max(0, Math.floor(rect.width));
-  const cssHeight = Math.max(0, Math.floor(rect.height));
-  settings.canvas.width = Math.max(1, Math.floor(cssWidth * state.dpr));
-  settings.canvas.height = Math.max(1, Math.floor(cssHeight * state.dpr));
-  settings.canvas.style.width = `${ cssWidth }px`;
-  settings.canvas.style.height = `${ cssHeight }px`;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(state.dpr, state.dpr);
-
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-character/square-diff-drags copy/script.ts
   if (!state.initialized) {
     state.squares.forEach((sq, i) => {
       sq.virtX = cssW * (i + 1) / (state.squares.length + 1);
@@ -163,17 +143,11 @@ function randomizePresets() {
   const keys = Object.keys(settings.presets);
   for (let i = keys.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-<<<<<<<< HEAD:src/new-character/square-diff-drags copy/script.js
     [ keys[i], keys[j] ] = [ keys[j], keys[i] ];
   }
   state.squares.forEach((sq, i) => {
     sq.preset = keys[i];
   });
-========
-    [ keys[ i ], keys[ j ] ] = [ keys[ j ], keys[ i ] ];
-  }
-  state.squares.forEach((sq, i) => { sq.preset = keys[ i ]; });
->>>>>>>> ced76e35c1283c11ed17e4376dd1f04c77d4e849:src/new-character/square-diff-drags copy/script.ts
 }
 settings.randomizeButton.addEventListener(`click`, randomizePresets);
 
@@ -181,6 +155,6 @@ function updateDebug(e) {
   const sq = state.activePointers.get(e.pointerId) ?? squareAt(e.offsetX, e.offsetY);
   const preset = sq ? sq.preset : `–`;
   settings.debug.textContent =
-    `type: ${ e.pointerType }   |   x: ${ Math.round(e.offsetX) }   y: ${ Math.round(e.offsetY) }` +
-    `   |   pressure: ${ e.pressure.toFixed(3) }   |   preset: ${ preset }`;
+    `type: ${e.pointerType}   |   x: ${Math.round(e.offsetX)}   y: ${Math.round(e.offsetY)}` +
+    `   |   pressure: ${e.pressure.toFixed(3)}   |   preset: ${preset}`;
 }

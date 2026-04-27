@@ -18,5 +18,8 @@
   "include": [
     "./**/*.d.ts",
     "./**/*.js"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

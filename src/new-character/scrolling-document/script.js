@@ -2,7 +2,6 @@ import { continuously } from "@ixfx/flow.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById(`canvas`));
-// ctx declared before setupCanvas so buildLayout (called in onResize) can use it
 const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext(`2d`));
 
 const settings = {
