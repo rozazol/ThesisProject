@@ -7,12 +7,16 @@ import * as rubber from "../square-modes/behaviors/rubber.js";
 import * as mud from "../square-modes/behaviors/mud.js";
 import * as ice from "../square-modes/behaviors/ice.js";
 import * as magnet from "../square-modes/behaviors/magnet.js";
+import * as viscosity from "../square-modes/behaviors/viscosity.js";
+import * as elasticity from "../square-modes/behaviors/elasticity.js";
+import * as forcefield from "../square-modes/behaviors/force-field.js";
 
-const behaviors = { rubber, mud, ice, magnet };
+
+const behaviors = { rubber, mud, ice, magnet, viscosity, elasticity, forcefield };
 
 const settings = {
-  cellSize: 24,
-  objSize: 14,
+  cellSize: 22,
+  objSize: 12,
   maxSpeed: 8,
   canvas: /** @type {HTMLCanvasElement} */ (document.getElementById(`canvas`)),
   modeSelect: /** @type {HTMLSelectElement} */ (document.getElementById(`mode-select`)),
@@ -28,6 +32,7 @@ const state = {
   twist: 0,
   twistNorm: 0,
   pointerType: `mouse`,
+  dragging: false,
   /** @type {Array<{homeX:number,homeY:number,virtX:number,virtY:number,velX:number,velY:number,targetX:number,targetY:number}>} */
   objects: [],
 };
@@ -57,6 +62,17 @@ function buildGrid(cssW, cssH) {
 
 
 setupPointer(settings.canvas, {
+  onDown(ptr) {
+    state.dragging = true;
+    state.pointerX = ptr.x;
+    state.pointerY = ptr.y;
+    state.pressure = ptr.pressure;
+    state.tiltX = ptr.tiltX;
+    state.tiltY = ptr.tiltY;
+    state.twist = ptr.twist;
+    state.twistNorm = ptr.twistNorm;
+    state.pointerType = ptr.pointerType;
+  },
   onMove(ptr) {
     state.pointerX = ptr.x;
     state.pointerY = ptr.y;
@@ -67,9 +83,12 @@ setupPointer(settings.canvas, {
     state.twistNorm = ptr.twistNorm;
     state.pointerType = ptr.pointerType;
   },
+  onUp() {
+    state.dragging = false;
+    state.pressure = 0;
+  },
 });
 
-// --- Mode select ---
 
 settings.modeSelect.addEventListener(`change`, () => {
   state.mode = settings.modeSelect.value;
@@ -81,7 +100,6 @@ settings.modeSelect.addEventListener(`change`, () => {
   }
 });
 
-// --- Main loop ---
 
 function tick() {
   const { cssW, cssH } = size;
@@ -103,7 +121,7 @@ function tick() {
       pointerX: state.pointerX,
       pointerY: state.pointerY,
       pointerType: state.pointerType,
-      dragging: false,
+      dragging: state.dragging,
       virtX: obj.virtX,
       virtY: obj.virtY,
       velX: obj.velX,

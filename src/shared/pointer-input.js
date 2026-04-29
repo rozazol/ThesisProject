@@ -26,8 +26,8 @@ export function setupPointer(element, { onDown, onMove, onUp } = {}) {
     };
   }
 
-  element.addEventListener(`pointerdown`, (e) => onDown?.(normalize(e)));
-  element.addEventListener(`pointermove`, (e) => onMove?.(normalize(e)));
+  element.addEventListener(`pointerdown`, (e) => { e.preventDefault(); onDown?.(normalize(e)); });
+  element.addEventListener(`pointermove`, (e) => { e.preventDefault(); onMove?.(normalize(e)); });
   element.addEventListener(`pointerup`, (e) => onUp?.(normalize(e)));
   element.addEventListener(`pointercancel`, (e) => onUp?.(normalize(e)));
 }

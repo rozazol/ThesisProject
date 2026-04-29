@@ -10,30 +10,10 @@ const settings = {
   lineH: 20,
   marginBefore: { h1: 10, h2: 36, body: 12, highlight: 16 },
   zones: {
-    heavyHigh: {
-      hitPadding: 40,
-      apply(/** @type {number} */ delta) {
-        return delta * 0.1;
-      },
-    },
-    heavyMed: {
-      hitPadding: 20,
-      apply(/** @type {number} */ delta) {
-        return delta * 0.45;
-      },
-    },
-    smooth: {
-      hitPadding: 0,
-      apply(/** @type {number} */ delta) {
-        return delta * 2;
-      },
-    },
-    heavyLow: {
-      hitPadding: 30,
-      apply(/** @type {number} */ delta) {
-        return delta * 0.25;
-      },
-    },
+    heavyHigh: { hitPadding: 40, factor: 0.1 },
+    heavyMed: { hitPadding: 20, factor: 0.45 },
+    smooth: { hitPadding: 0, factor: 2.0 },
+    heavyLow: { hitPadding: 30, factor: 0.25 },
   },
   colors: {
     docBg: `#fafaf8`,
@@ -78,7 +58,9 @@ let state = {
   contentOffset: 0,
   isScrolling: false,
   lastY: /** @type {number|null} */ (null),
-  activeZone: settings.zones.smooth,
+  currentFactor: 2.0,
+  targetFactor: 2.0,
+  velocity: 0,
   activeBlock: /** @type {any} */ (null),
   layout: /** @type {any[]} */ ([]),
   contentTotalH: 0,
@@ -173,30 +155,31 @@ function computeHighlightZones(segments, maxW, lineH, blockDocY) {
   return zones;
 }
 
-// setupCanvas handles HiDPI init and resize; onResize updates state and rebuilds layout
+
 setupCanvas(canvas, (cssW, cssH) => {
   saveState({ cssWidth: cssW, cssHeight: cssH });
   buildLayout(Math.min(settings.docMaxW, cssW - 40));
 });
 
 canvas.addEventListener(`pointerdown`, (e) => {
+  e.preventDefault();
   if (e.pointerType === `touch`) return;
-  saveState({ isScrolling: true, lastY: e.offsetY });
+  saveState({ isScrolling: true, lastY: e.offsetY, velocity: 0 });
   canvas.setPointerCapture(e.pointerId);
 });
 
 canvas.addEventListener(`pointermove`, (e) => {
-  const { contentOffset, isScrolling, lastY, layout, activeZone } = state;
+  const { contentOffset, isScrolling, lastY, layout, currentFactor } = state;
   const docY = contentOffset + e.offsetY;
 
   let newActiveBlock = null;
-  let newActiveZone = activeZone;
+  let newTargetFactor = settings.zones.smooth.factor;
 
   for (const item of layout) {
     const pad = item.zone.hitPadding;
     if (pad > 0 && docY >= item.y - pad && docY < item.y + item.h + pad) {
       newActiveBlock = item;
-      newActiveZone = item.zone;
+      newTargetFactor = item.zone.factor;
       break;
     }
   }
@@ -205,7 +188,7 @@ canvas.addEventListener(`pointermove`, (e) => {
     for (const item of layout) {
       if (docY >= item.y && docY < item.y + item.h) {
         newActiveBlock = item;
-        newActiveZone = item.zone;
+        newTargetFactor = item.zone.factor;
         break;
       }
     }
@@ -214,7 +197,7 @@ canvas.addEventListener(`pointermove`, (e) => {
   if (newActiveBlock?.highlightZones) {
     for (const hz of newActiveBlock.highlightZones) {
       if (docY >= hz.y && docY < hz.y + hz.h) {
-        newActiveZone = settings.zones.heavyLow;
+        newTargetFactor = settings.zones.heavyLow.factor;
         break;
       }
     }
@@ -222,13 +205,25 @@ canvas.addEventListener(`pointermove`, (e) => {
 
   const patch = /** @type {Partial<typeof state>} */ ({
     activeBlock: newActiveBlock,
-    activeZone: newActiveZone,
+    targetFactor: newTargetFactor,
   });
 
   if (isScrolling && lastY !== null) {
     const delta = e.offsetY - lastY;
+
+    // Stylus pressure pushes through resistance: harder press overcomes heavy zones.
+    // Smooth zones are unaffected (heaviness ≈ 0).
+    let effectiveFactor = currentFactor;
+    if (e.pointerType === `pen` && e.pressure > 0.05) {
+      const heaviness = Math.max(0, 1 - currentFactor / 2);
+      const boost = (e.pressure - 0.05) * heaviness * 0.6;
+      effectiveFactor = currentFactor + boost;
+    }
+
+    const movement = -delta * effectiveFactor;
     patch.lastY = e.offsetY;
-    patch.contentOffset = clampOffset(contentOffset + newActiveZone.apply(-delta));
+    patch.contentOffset = clampOffset(contentOffset + movement);
+    patch.velocity = movement;
   }
 
   saveState(patch);
@@ -249,7 +244,25 @@ const docW = () => Math.min(settings.docMaxW, state.cssWidth - 40);
 const docX = () => (state.cssWidth - docW()) / 2;
 
 continuously(() => {
-  const { cssWidth, cssHeight, contentOffset, layout } = state;
+  let { currentFactor, targetFactor, velocity, contentOffset, isScrolling } = state;
+
+  // Snap into heavy zones faster than easing out — entering feels like hitting weight,
+  // leaving feels like pulling free of something thick.
+  const lerpSpeed = targetFactor < currentFactor ? 0.18 : 0.09;
+  currentFactor += (targetFactor - currentFactor) * lerpSpeed;
+
+  // Coast after stylus lifts; friction decays velocity to zero over ~1 second.
+  if (!isScrolling && Math.abs(velocity) > 0.1) {
+    contentOffset = clampOffset(contentOffset + velocity);
+    velocity *= 0.88;
+    if (Math.abs(velocity) < 0.1) velocity = 0;
+  } else if (!isScrolling) {
+    velocity = 0;
+  }
+
+  saveState({ currentFactor, velocity, contentOffset });
+
+  const { cssWidth, cssHeight, layout } = state;
   const { colors, docPadding, lineH } = settings;
 
   ctx.clearRect(0, 0, cssWidth, cssHeight);
@@ -273,7 +286,7 @@ continuously(() => {
 
   for (const item of layout) {
     const { block, y, h } = item;
-    const screenY = y - contentOffset;
+    const screenY = y - state.contentOffset;
 
     if (screenY + h < 0) continue;
     if (screenY > cssHeight) break;

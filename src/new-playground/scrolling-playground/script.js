@@ -69,7 +69,7 @@ function draw() {
   ctx.translate(0, -state.virtY);
 
   const fontSize = Math.min(cssW * 0.06, cssH * 0.1, 64);
-  ctx.font = `${ fontSize }px Overpass Mono, monospace`;
+  ctx.font = `${fontSize}px Overpass Mono, monospace`;
   ctx.textAlign = `center`;
   ctx.textBaseline = `middle`;
 
@@ -87,7 +87,7 @@ function draw() {
 function updateDebug() {
   const lag = Math.abs(state.targetY - state.virtY).toFixed(1);
   settings.debug.textContent =
-    `target: ${ Math.round(state.targetY) }px   |   pos: ${ Math.round(state.virtY) }px   |   lag: ${ lag }px`;
+    `target: ${Math.round(state.targetY)}px   |   pos: ${Math.round(state.virtY)}px   |   lag: ${lag}px`;
 }
 
 const presets = {

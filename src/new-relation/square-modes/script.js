@@ -43,7 +43,6 @@ const state = {
   mode: `rubber`,
 };
 
-// --- Canvas ---
 
 const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
   if (!state.initialized) {
@@ -55,7 +54,6 @@ const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
   }
 });
 
-// --- Pointer ---
 
 /** @param {import('../../shared/pointer-input.js').PointerState} ptr */
 function applyPointerToState(ptr) {
@@ -97,7 +95,6 @@ setupPointer(settings.canvas, {
   },
 });
 
-// --- Mode buttons ---
 
 document.querySelectorAll(`.mode-btn`).forEach(btn => {
   btn.addEventListener(`click`, () => {
@@ -112,7 +109,6 @@ document.querySelectorAll(`.mode-btn`).forEach(btn => {
 });
 settings.modeDesc.textContent = behaviors[state.mode]?.config.desc ?? ``;
 
-// --- Main loop ---
 
 function buildSnapshot() {
   const centerX = state.virtX + settings.size / 2;

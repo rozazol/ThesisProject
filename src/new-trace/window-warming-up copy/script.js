@@ -100,6 +100,7 @@ function updateCursor(px, py) {
 }
 
 settings.canvas.addEventListener(`pointerdown`, (e) => {
+  e.preventDefault();
   const x = e.offsetX,
     y = e.offsetY;
   const corner = hitCorner(x, y);

@@ -79,6 +79,7 @@ function pointerXY(e) {
 }
 
 settings.canvas.addEventListener(`pointerdown`, (e) => {
+  e.preventDefault();
   const { x, y } = pointerXY(e);
   const sq = squareAt(x, y);
   if (!sq) return;

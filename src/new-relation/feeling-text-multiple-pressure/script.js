@@ -272,6 +272,7 @@ function getCanvasPos(e) {
 }
 
 settings.canvas.addEventListener(`pointerdown`, (e) => {
+  e.preventDefault();
   const pos = getCanvasPos(e);
   state.pointerY = pos.y;
   state.selectStart = pos.x;

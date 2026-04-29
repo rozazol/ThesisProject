@@ -8,9 +8,6 @@ export const config = {
   weight: 8,
 };
 
-/**
- * @param {import('../script.js').PointerSnapshot} s
- */
 export function update(s) {
   const { pressure, tiltX, dist, pointerX, pointerY, centerX, centerY, virtX, virtY } = s;
 
@@ -23,7 +20,6 @@ export function update(s) {
     const baseMag = Numbers.scale(dist, 0, fieldRange, 6, 0);
     const fieldMag = pressure < 0.05 ? baseMag : baseMag * 1.8;
 
-    // tiltX left = attract, right = repel
     const fieldSign = pressure < 0.05 ?
       1 :
       (tiltX < -5 ? 1 : (tiltX > 5 ? -1 : Numbers.scale(tiltX, -5, 5, 1, -1)));
@@ -41,7 +37,6 @@ export function update(s) {
     weight: config.weight,
     extraVelX,
     extraVelY,
-    // Keep target pinned to current position so spring never fights the field force
     targetX: virtX,
     targetY: virtY,
   };

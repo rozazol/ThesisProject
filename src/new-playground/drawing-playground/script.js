@@ -22,7 +22,6 @@ const settings = {
   weightValue: /** @type {HTMLElement} */ (document.getElementById(`weightValue`)),
 };
 
-// targetX/Y = real pointer position (spring target); virtX/Y = lagging virtual pen
 const state = {
   isDrawing: false,
   targetX: 0,
@@ -38,6 +37,7 @@ const state = {
 const { ctx, size } = setupCanvas(settings.canvas);
 
 settings.canvas.addEventListener(`pointerdown`, (e) => {
+  e.preventDefault();
   if (e.pointerType === `touch`) return;
   state.isDrawing = true;
   state.targetX = e.offsetX;

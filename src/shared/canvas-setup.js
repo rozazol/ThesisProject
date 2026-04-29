@@ -1,5 +1,5 @@
 /**
- * Sets up a HiDPI canvas and keeps it in sync with window resizes.
+ * Sets up canvas and keeps it in sync with window resizes.
  * Returns { ctx, size } where size = { cssW, cssH } is a live object updated on every resize.
  *
  * @param {HTMLCanvasElement} canvas
@@ -9,6 +9,8 @@
 export function setupCanvas(canvas, onResize) {
   const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext(`2d`));
   const size = { cssW: 0, cssH: 0 };
+  canvas.style.touchAction = `none`;
+  canvas.style.userSelect = `none`;
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;

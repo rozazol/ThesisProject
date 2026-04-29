@@ -8,9 +8,6 @@ export const config = {
   weight: 4,
 };
 
-/**
- * @param {import('../script.js').PointerSnapshot} s
- */
 export function update(s) {
   const { pressure, tiltX, tiltY, twistNorm, dragging, dist,
     pointerX, pointerY, centerX, centerY, rotation } = s;

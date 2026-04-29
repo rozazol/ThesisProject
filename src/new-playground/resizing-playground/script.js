@@ -74,6 +74,7 @@ function updateCursor(px, py) {
 }
 
 settings.canvas.addEventListener(`pointerdown`, (e) => {
+  e.preventDefault();
   const x = e.offsetX,
     y = e.offsetY;
   if (hitHandle(x, y)) {

@@ -3,20 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rubber Field</title>
+  <title>Field</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <canvas id="canvas"></canvas>
   <div id="controls">
     <select id="mode-select">
-      <option value="rubber">Rubber</option>
-      <option value="mud">Mud</option>
-      <option value="ice">Ice</option>
-      <option value="magnet">Magnet</option>
+      <option value="rubber">1</option>
+      <option value="mud">2</option>
+      <option value="ice">3</option>
+      <option value="magnet">4</option>
+      <option value="viscosity">5</option>
+      <option value="elasticity">6</option>
+      <option value="forcefield">7</option>
     </select>
   </div>
   <script type="importmap">{ "imports": { "@ixfx": "/ixfx/core.js", "@ixfx/": "/ixfx/" } }</script>
   <script type="module" src="script.js"></script>
+  <script type="module" src="../../shared/toggle-info.js"></script>
 </body>
 </html>
