@@ -43,6 +43,7 @@ const state = {
   rawX: 0,
   rawY: 0,
   lastPressure: 0,
+  peakPressure: 0,
   initialized: false,
 };
 
@@ -82,7 +83,7 @@ function snapPosition(x, y) {
 
 function snapWithPressure(rawX, rawY, pressure) {
   const snapped = snapPosition(rawX, rawY);
-  const t = Numbers.clamp(pressure, 0, 1);
+  const t = Numbers.clamp(pressure / 0.5, 0, 1);
   return {
     x: snapped.x * (1 - t) + rawX * t,
     y: snapped.y * (1 - t) + rawY * t,
@@ -97,6 +98,7 @@ setupPointer(canvas, {
       state.activeIdx = idx;
       state.dragOffsetX = ptr.x - settings.icons[idx].virtX;
       state.dragOffsetY = ptr.y - settings.icons[idx].virtY;
+      state.peakPressure = 0;
       canvas.setPointerCapture(ptr.pointerId);
     }
   },
@@ -109,7 +111,10 @@ setupPointer(canvas, {
 
       state.rawX = rawX;
       state.rawY = rawY;
-      if (ptr.pointerType === `pen`) state.lastPressure = ptr.pressure;
+      if (ptr.pointerType === `pen` && ptr.pressure > 0) {
+        state.lastPressure = ptr.pressure;
+        state.peakPressure = Math.max(state.peakPressure, ptr.pressure);
+      }
 
       const pos = snapWithPressure(rawX, rawY, ptr.pressure);
       icon.targetX = pos.x;
@@ -123,10 +128,18 @@ setupPointer(canvas, {
   onUp(ptr) {
     if (state.dragging && state.activeIdx !== -1) {
       const icon = settings.icons[state.activeIdx];
-      const pressure = ptr.pointerType === `pen` ? state.lastPressure : 0;
-      const pos = snapWithPressure(state.rawX, state.rawY, pressure);
+      const pressure = ptr.pointerType === `pen` ? state.peakPressure : 0;
+      const pos = pressure >= 0.5 ?
+        { x: state.rawX, y: state.rawY } :
+        snapWithPressure(state.rawX, state.rawY, pressure);
       icon.targetX = pos.x;
       icon.targetY = pos.y;
+      if (pressure >= 0.5) {
+        icon.virtX = pos.x;
+        icon.virtY = pos.y;
+        icon.velX = 0;
+        icon.velY = 0;
+      }
       state.lastPressure = 0;
     }
     if (state.dragging) canvas.style.cursor = `grab`;
@@ -242,7 +255,7 @@ function draw() {
 /** @param {{ pointerType: string, pressure: number }} ptr */
 function updateDebug(ptr) {
   const pressure = ptr.pointerType === `pen` ? ptr.pressure : null;
-  const snapPct = pressure == null ? 100 : Math.round((1 - Numbers.clamp(pressure, 0, 1)) * 100);
+  const snapPct = pressure == null ? 100 : Math.round((1 - Numbers.clamp(pressure / 0.5, 0, 1)) * 100);
   debug.textContent =
     `type: ${ptr.pointerType}` +
     (pressure != null ? `   |   pressure: ${pressure.toFixed(2)}` : ``) +

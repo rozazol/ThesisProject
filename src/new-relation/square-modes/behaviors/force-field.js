@@ -1,5 +1,6 @@
 import * as Numbers from "@ixfx/numbers.js";
 
+
 export const config = Object.freeze({
   color: `#5AADEA`,
   friction: 0.08,

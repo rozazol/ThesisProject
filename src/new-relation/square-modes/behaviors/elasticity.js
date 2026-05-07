@@ -26,8 +26,8 @@ export function update(s) {
   let newTargetY;
 
   if (dragging) {
-    state.deformX += (pointerX - centerX) * pressure * 0.008;
-    state.deformY += (pointerY - centerY) * pressure * 0.008;
+    state.deformX += (pointerX - centerX) * pressure * 0.08;
+    state.deformY += (pointerY - centerY) * pressure * 0.08;
   } else {
     state.deformX *= 0.82;
     state.deformY *= 0.82;
@@ -60,9 +60,11 @@ export function update(s) {
   }
 
   if (dragging && pressure > 0.05) {
-    const stretchResistance = 1 - deformNorm * 0.6;
-    newTargetX = Numbers.clamp(targetX + tiltX * 0.7 * stretchResistance, 0, cssW - size);
-    newTargetY = Numbers.clamp(targetY + tiltY * 0.7 * stretchResistance, 0, cssH - size);
+    const stretchResistance = 1 - deformNorm * 0.2;
+    const tiltInfluence = Math.max(0, Math.min(1, Numbers.scale(dist, 0, hoverRadius, 1, 0)));
+    const tiltScale = 0.01 * stretchResistance * tiltInfluence;
+    newTargetX = Numbers.clamp(targetX + tiltX * tiltScale, 0, cssW - size);
+    newTargetY = Numbers.clamp(targetY + tiltY * tiltScale, 0, cssH - size);
   }
 
   const speed = Math.sqrt(velX ** 2 + velY ** 2);

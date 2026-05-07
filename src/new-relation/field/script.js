@@ -3,16 +3,12 @@ import * as Numbers from "@ixfx/numbers.js";
 import { physicsStep, capSpeed } from "../../shared/physics.js";
 import { setupCanvas } from "../../shared/canvas-setup.js";
 import { setupPointer } from "../../shared/pointer-input.js";
-import * as rubber from "../square-modes/behaviors/rubber.js";
-import * as mud from "../square-modes/behaviors/mud.js";
-import * as ice from "../square-modes/behaviors/ice.js";
-import * as magnet from "../square-modes/behaviors/magnet.js";
-import * as viscosity from "../square-modes/behaviors/viscosity.js";
-import * as elasticity from "../square-modes/behaviors/elasticity.js";
-import * as forcefield from "../square-modes/behaviors/force-field.js";
+import * as viscosity from "../square-modes/behaviors/viscosity-field.js";
+import * as elasticity from "../square-modes/behaviors/elasticity-field.js";
+import * as force from "../square-modes/behaviors/force-field copy.js";
 
 
-const behaviors = { rubber, mud, ice, magnet, viscosity, elasticity, forcefield };
+const behaviors = { elasticity, force, viscosity };
 
 const settings = {
   cellSize: 22,
@@ -23,7 +19,7 @@ const settings = {
 };
 
 const state = {
-  mode: `rubber`,
+  mode: `elasticity`,
   pointerX: -9999,
   pointerY: -9999,
   pressure: 0,
@@ -35,6 +31,7 @@ const state = {
   dragging: false,
   /** @type {Array<{homeX:number,homeY:number,virtX:number,virtY:number,velX:number,velY:number,targetX:number,targetY:number}>} */
   objects: [],
+  pointerOver: false,
 };
 
 
@@ -89,6 +86,12 @@ setupPointer(settings.canvas, {
   },
 });
 
+settings.canvas.addEventListener(`pointerenter`, () => {
+  state.pointerOver = true;
+});
+settings.canvas.addEventListener(`pointerleave`, () => {
+  state.pointerOver = false;
+});
 
 settings.modeSelect.addEventListener(`change`, () => {
   state.mode = settings.modeSelect.value;
@@ -105,6 +108,12 @@ function tick() {
   const { cssW, cssH } = size;
   const { objSize, maxSpeed } = settings;
   const behavior = behaviors[state.mode];
+
+  if (!behavior) {
+    console.warn(`No behavior found for mode: "${state.mode}"`);
+    return;
+  }
+
 
   for (const obj of state.objects) {
     const centerX = obj.virtX + objSize / 2;
@@ -135,6 +144,7 @@ function tick() {
       cssW,
       cssH,
       size: objSize,
+      pointerOver: state.pointerOver,
     });
 
     if (result.targetX !== undefined) obj.targetX = result.targetX;
@@ -146,8 +156,9 @@ function tick() {
   }
 
   ctx.clearRect(0, 0, cssW, cssH);
-  ctx.fillStyle = behavior.config.color;
   for (const obj of state.objects) {
+    const color = behavior.getMeltColor ? behavior.getMeltColor(obj.meltLevel || 0) : behavior.config.color;
+    ctx.fillStyle = color;
     ctx.fillRect(obj.virtX, obj.virtY, objSize, objSize);
   }
 }

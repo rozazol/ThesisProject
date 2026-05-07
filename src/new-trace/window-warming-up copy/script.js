@@ -20,6 +20,10 @@ const settings = Object.freeze({
 const state = {
   ax: 80,
   ay: 80,
+  velX: 0,
+  velY: 0,
+  targetX: 80,
+  targetY: 80,
   virtW: 160,
   virtH: 160,
   velW: 0,
@@ -50,6 +54,8 @@ const { ctx, size } = setupCanvas(settings.canvas, (cssW, cssH) => {
     state.targetH = s;
     state.ax = cssW * 0.2;
     state.ay = cssH * 0.15;
+    state.targetX = state.ax;
+    state.targetY = state.ay;
     state.initialized = true;
   }
 });
@@ -116,6 +122,8 @@ settings.canvas.addEventListener(`pointerdown`, (e) => {
     state.moving = true;
     state.moveDx = x - state.ax;
     state.moveDy = y - state.ay;
+    state.lastPx = x;
+    state.lastPy = y;
     settings.canvas.setPointerCapture(e.pointerId);
   }
 });
@@ -148,8 +156,14 @@ settings.canvas.addEventListener(`pointermove`, (e) => {
       state.targetH = Numbers.clamp(y - anchorY, minSize, maxSize);
     }
   } else if (state.moving) {
-    state.ax = Numbers.clamp(x - state.moveDx, 0, size.cssW - state.virtW);
-    state.ay = Numbers.clamp(y - state.moveDy, 0, size.cssH - state.virtH);
+    const dx = x - state.lastPx;
+    const dy = y - state.lastPy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    state.engagement = Numbers.clamp(state.engagement + dist * settings.engageGain, 0, 1);
+    state.lastPx = x;
+    state.lastPy = y;
+    state.targetX = Numbers.clamp(x - state.moveDx, 0, size.cssW - state.virtW);
+    state.targetY = Numbers.clamp(y - state.moveDy, 0, size.cssH - state.virtH);
   }
 });
 
@@ -189,6 +203,19 @@ const loop = continuously(() => {
   if (state.resizing && state.activeCorner) {
     if (state.activeCorner.includes(`l`)) state.ax = state.anchorX - state.virtW;
     if (state.activeCorner.includes(`t`)) state.ay = state.anchorY - state.virtH;
+    state.targetX = state.ax;
+    state.targetY = state.ay;
+    state.velX = 0;
+    state.velY = 0;
+  } else {
+    const forceX = (state.targetX - state.ax) * pull;
+    const forceY = (state.targetY - state.ay) * pull;
+    state.velX += forceX / weight;
+    state.velY += forceY / weight;
+    state.velX *= (1 - friction);
+    state.velY *= (1 - friction);
+    state.ax += state.velX;
+    state.ay += state.velY;
   }
 
   draw();
@@ -196,7 +223,7 @@ const loop = continuously(() => {
 });
 loop.start();
 
-const labelText = `Grab a corner of the window and start resizing it. A window you've just opened feels stiff and cold,the more you work with it, the warmer and more yielding it becomes.`;
+// const labelText = `Grab a corner of the window and start resizing it. A window you've just opened feels stiff and cold,the more you work with it, the warmer and more yielding it becomes.`;
 
 /**
  * @param {CanvasRenderingContext2D} ctx
@@ -223,10 +250,10 @@ function draw() {
   ctx.clearRect(0, 0, size.cssW, size.cssH);
   const { ax, ay, virtW, virtH } = state;
 
-  ctx.save();
-  ctx.font = `14px "Overpass Mono", monospace`;
-  ctx.fillStyle = `rgba(255, 255, 255, 0.7)`;
-  wrapText(ctx, labelText, 12, 28, 500, 22);
+  // ctx.save();
+  // ctx.font = `14px "Overpass Mono", monospace`;
+  // ctx.fillStyle = `rgba(255, 255, 255, 0.7)`;
+  // wrapText(ctx, labelText, 12, 28, 500, 22);
   ctx.restore();
 
   const titleH = 28;
